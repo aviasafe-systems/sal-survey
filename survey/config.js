@@ -12,7 +12,7 @@
  */
 
 // Supabase Configuration - REPLACE WITH YOUR ACTUAL VALUES
-const SUPABASE_URL = ' https://nrbnhvtomwfmanijtgal.supabase.co';
+const SUPABASE_URL = 'https://nrbnhvtomwfmanijtgal.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yYm5odnRvbXdmbWFuaWp0Z2FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTAxMTQsImV4cCI6MjA4OTY2NjExNH0.QsOVIjDDc_UzT7CqtUedGktrAtVTvXk3HnxKlwtWtDs';
 
 // Get Sita Air's UUID from database - Run in Supabase SQL:
