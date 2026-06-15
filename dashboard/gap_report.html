@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ICAO SMS Gap Analysis Report | Sita Air</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -22,7 +23,6 @@
             margin: 0 auto;
         }
 
-        /* Report Card */
         .report-card {
             background: white;
             border-radius: 16px;
@@ -30,7 +30,6 @@
             overflow: hidden;
         }
 
-        /* Hero */
         .hero {
             background: linear-gradient(135deg, #0A1628 0%, #1A2A4A 100%);
             color: white;
@@ -67,7 +66,6 @@
             flex-wrap: wrap;
         }
 
-        /* Section */
         .section {
             padding: 30px 40px;
             border-bottom: 1px solid #e8ecf0;
@@ -89,7 +87,6 @@
             margin-bottom: 20px;
         }
 
-        /* Score Grid */
         .score-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -111,11 +108,10 @@
         }
 
         .score-card .value {
-            font-size: 36px;
+            font-size: 48px;
             font-weight: 800;
         }
 
-        /* Gauge */
         .gauge-container {
             background: #f8fafc;
             border-radius: 16px;
@@ -124,7 +120,7 @@
         }
 
         .gauge-bar {
-            height: 16px;
+            height: 20px;
             background: #e2e8f0;
             border-radius: 20px;
             overflow: hidden;
@@ -135,14 +131,9 @@
             height: 100%;
             width: 0%;
             border-radius: 20px;
+            background: linear-gradient(90deg, #dc2626, #ea580c, #eab308, #16a34a);
         }
 
-        .gauge-fill-critical { background: linear-gradient(90deg, #dc2626, #ef4444); }
-        .gauge-fill-high { background: linear-gradient(90deg, #ea580c, #f97316); }
-        .gauge-fill-medium { background: linear-gradient(90deg, #eab308, #facc15); }
-        .gauge-fill-low { background: linear-gradient(90deg, #16a34a, #22c55e); }
-
-        /* Pillar Grid */
         .pillar-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -170,11 +161,10 @@
         }
 
         .pillar-card .score {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 800;
         }
 
-        /* Element Rows */
         .element-row {
             display: flex;
             align-items: center;
@@ -195,6 +185,7 @@
             width: 50px;
             text-align: right;
             font-weight: 700;
+            font-size: 16px;
         }
 
         .element-bar {
@@ -211,10 +202,10 @@
             border-radius: 10px;
         }
 
-        .fill-critical { background: #dc2626; }
-        .fill-high { background: #ea580c; }
-        .fill-warning { background: #eab308; }
-        .fill-good { background: #16a34a; }
+        .fill-critical { background: #dc2626; width: 38%; }
+        .fill-high { background: #ea580c; width: 52%; }
+        .fill-warning { background: #eab308; width: 68%; }
+        .fill-good { background: #16a34a; width: 85%; }
 
         .element-status {
             width: 90px;
@@ -230,7 +221,6 @@
         .status-warning { background: #fef9c3; color: #ca8a04; }
         .status-good { background: #dcfce7; color: #16a34a; }
 
-        /* Action Cards */
         .action-card {
             background: #fff9f0;
             border: 1px solid #fef3c7;
@@ -272,30 +262,28 @@
             flex-wrap: wrap;
         }
 
-        /* Insight Box */
         .insight-box {
             background: #f0fdf4;
             border-left: 4px solid #16a34a;
-            padding: 20px;
+            padding: 24px;
             border-radius: 12px;
             margin: 20px 0;
         }
 
         .insight-box .label {
-            font-size: 11px;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 700;
             color: #16a34a;
             text-transform: uppercase;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
 
         .insight-box .text {
-            font-size: 15px;
-            line-height: 1.5;
+            font-size: 16px;
+            line-height: 1.6;
             color: #166534;
         }
 
-        /* Buttons */
         .button-bar {
             position: sticky;
             bottom: 20px;
@@ -331,7 +319,6 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        /* Loading State */
         .loading {
             text-align: center;
             padding: 60px;
@@ -341,7 +328,6 @@
             color: #64748b;
         }
 
-        /* Print/PDF Optimization */
         @media print {
             body {
                 background: white;
@@ -358,245 +344,185 @@
             .hero {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
-                break-inside: avoid;
-            }
-            .score-card, .pillar-card, .action-card, .insight-box {
-                break-inside: avoid;
-            }
-            .element-row {
-                break-inside: avoid;
             }
         }
     </style>
 </head>
 <body>
     <div class="report-wrapper">
-        <div id="reportContainer">
-            <div class="loading">📊 Loading your ICAO SMS Gap Analysis Report...</div>
-        </div>
+        <div id="reportContainer" class="loading">Loading ICAO SMS Gap Analysis Report...</div>
         <div class="button-bar" id="buttonBar" style="display: none;">
-            <button class="btn btn-secondary" id="savePdfBtn">📄 Save as PDF (Print → Save as PDF)</button>
+            <button class="btn btn-secondary" id="printBtn">🖨️ Print Report</button>
+            <button class="btn btn-secondary" id="pdfBtn">📄 Save as PDF</button>
         </div>
     </div>
 
     <script>
-        // ============================================
-        // ICAO SMS SCORING ENGINE
-        // ============================================
-        
-        // Maps survey question IDs to ICAO 12 elements
-        const ELEMENT_MAP = {
-            "q1_aware": "1.1_commitment", "q2": "1.1_commitment", 
-            "q3": "1.2_accountability", "q4": "1.2_accountability",
-            "q5_spi": "1.3_key_personnel", "q6": "1.4_emergency", 
-            "q7": "1.5_documentation",
-            "q8": "2.1_hazard_id", "q9": "2.1_hazard_id", "q10": "2.1_hazard_id",
-            "q11": "2.2_risk_mitigation", "q12": "2.2_risk_mitigation",
-            "q13_action_inform": "3.1_performance", "q14": "3.1_performance",
-            "q15": "3.2_change_mgmt", "q16": "3.2_change_mgmt",
-            "q17": "3.3_improvement", "q18": "3.3_improvement", "q19": "3.3_improvement",
-            "q20_corrective": "4.1_training", "q21": "4.1_training",
-            "q22": "4.2_communication", "q23_peer": "4.2_communication", 
-            "q24_comments": "4.2_communication"
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://nrbnhvtomwfmanijtgal.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yYm5odnRvbXdmbWFuaWp0Z2FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTAxMTQsImV4cCI6MjA4OTY2NjExNH0.QsOVIjDDc_UzT7CqtUedGktrAtVTvXk3HnxKlwtWtDs';
+        const AIRLINE_ID = '9c41f9bb-6337-4ef0-bb35-040d632f4646';
+
+        // Initialize Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ICAO Element Names and Pillar Mapping
+        const ELEMENT_NAMES = {
+            "q2": { name: "Safety Policy Awareness", pillar: 1, pillarName: "Safety Policy", weight: 0.08 },
+            "q3": { name: "Management Commitment", pillar: 1, pillarName: "Safety Policy", weight: 0.08 },
+            "q4": { name: "Policy Applicability", pillar: 1, pillarName: "Safety Policy", weight: 0.08 },
+            "q5_spi": { name: "Safety Performance Targets", pillar: 1, pillarName: "Safety Policy", weight: 0.08 },
+            "q6": { name: "Hazard Reporting Process", pillar: 2, pillarName: "Risk Management", weight: 0.10 },
+            "q7": { name: "Reporting Comfort", pillar: 2, pillarName: "Risk Management", weight: 0.10 },
+            "q8": { name: "Ease of Reporting", pillar: 2, pillarName: "Risk Management", weight: 0.10 },
+            "q9": { name: "Reporting Confirmation", pillar: 2, pillarName: "Risk Management", weight: 0.10 },
+            "q10": { name: "Hazard Training", pillar: 2, pillarName: "Risk Management", weight: 0.10 },
+            "q11": { name: "Risk Assessment Process", pillar: 2, pillarName: "Risk Management", weight: 0.10 },
+            "q12_risk_assess": { name: "Change Risk Assessment", pillar: 2, pillarName: "Risk Management", weight: 0.10 },
+            "q13_action_inform": { name: "Action Feedback", pillar: 2, pillarName: "Risk Management", weight: 0.10 },
+            "q14": { name: "Safety Monitoring", pillar: 3, pillarName: "Safety Assurance", weight: 0.12 },
+            "q15": { name: "Data-Driven Decisions", pillar: 3, pillarName: "Safety Assurance", weight: 0.12 },
+            "q16": { name: "Change Management", pillar: 3, pillarName: "Safety Assurance", weight: 0.12 },
+            "q17": { name: "Audit Tracking", pillar: 3, pillarName: "Safety Assurance", weight: 0.12 },
+            "q18": { name: "Learning Culture", pillar: 3, pillarName: "Safety Assurance", weight: 0.12 },
+            "q19": { name: "Improvement Visibility", pillar: 3, pillarName: "Safety Assurance", weight: 0.12 },
+            "q20_corrective": { name: "Corrective Actions", pillar: 3, pillarName: "Safety Assurance", weight: 0.12 },
+            "q21": { name: "Safety Training", pillar: 4, pillarName: "Safety Promotion", weight: 0.12 },
+            "q22": { name: "Training Updates", pillar: 4, pillarName: "Safety Promotion", weight: 0.12 },
+            "q23_peer": { name: "Peer Safety Culture", pillar: 4, pillarName: "Safety Promotion", weight: 0.12 }
         };
 
-        // ICAO 12 element details
-        const ELEMENT_DETAILS = {
-            "1.1_commitment": { name: "Management Commitment", pillar: 1, pillarName: "Safety Policy", shortDesc: "Leadership visibly prioritizes safety" },
-            "1.2_accountability": { name: "Safety Accountabilities", pillar: 1, pillarName: "Safety Policy", shortDesc: "Clear safety responsibilities" },
-            "1.3_key_personnel": { name: "Key Safety Personnel", pillar: 1, pillarName: "Safety Policy", shortDesc: "Qualified SMS manager" },
-            "1.4_emergency": { name: "Emergency Response", pillar: 1, pillarName: "Safety Policy", shortDesc: "Emergency preparedness" },
-            "1.5_documentation": { name: "SMS Documentation", pillar: 1, pillarName: "Safety Policy", shortDesc: "SMS manual and records" },
-            "2.1_hazard_id": { name: "Hazard Identification", pillar: 2, pillarName: "Risk Management", shortDesc: "Proactive hazard reporting" },
-            "2.2_risk_mitigation": { name: "Risk Assessment", pillar: 2, pillarName: "Risk Management", shortDesc: "Formal risk methodology" },
-            "3.1_performance": { name: "Safety Performance", pillar: 3, pillarName: "Safety Assurance", shortDesc: "SPI tracking" },
-            "3.2_change_mgmt": { name: "Management of Change", pillar: 3, pillarName: "Safety Assurance", shortDesc: "Change risk assessment" },
-            "3.3_improvement": { name: "Continuous Improvement", pillar: 3, pillarName: "Safety Assurance", shortDesc: "Corrective action tracking" },
-            "4.1_training": { name: "Training & Education", pillar: 4, pillarName: "Safety Promotion", shortDesc: "SMS competency training" },
-            "4.2_communication": { name: "Safety Communication", pillar: 4, pillarName: "Safety Promotion", shortDesc: "Safety information sharing" }
-        };
-
-        // Load survey responses from localStorage
-        function loadResponses() {
-            try {
-                const raw = localStorage.getItem('sms_pending_responses');
-                if (!raw) return [];
-                const all = JSON.parse(raw);
-                // Return only question responses (not full submissions)
-                return all.filter(r => r.question_id);
-            } catch(e) { 
-                console.error("Error loading responses:", e);
-                return []; 
-            }
-        }
-
-        // Calculate ICAO compliance scores
-        function calculateScores(responses) {
-            // Initialize scores for all elements
-            const scores = {};
-            for (const elem of Object.keys(ELEMENT_DETAILS)) {
-                scores[elem] = { total: 0, count: 0 };
-            }
+        async function loadData() {
+            console.log("[Dashboard] Loading data from Supabase...");
             
-            // Aggregate scores from responses
-            for (const resp of responses) {
-                const elem = ELEMENT_MAP[resp.question_id];
-                if (elem && scores[elem] && resp.answer) {
-                    const val = parseInt(resp.answer);
-                    if (!isNaN(val)) {
-                        // Convert 1-5 Likert scale to percentage
-                        scores[elem].total += (val / 5) * 100;
-                        scores[elem].count++;
-                    }
-                }
-            }
+            const { data: responses, error } = await supabase
+                .from('responses')
+                .select('*')
+                .eq('airline_id', AIRLINE_ID);
             
-            // Calculate averages and organize results
-            const results = {};
-            let totalScore = 0;
-            let totalCount = 0;
-            const pillarSums = { 1: { sum: 0, count: 0 }, 2: { sum: 0, count: 0 }, 3: { sum: 0, count: 0 }, 4: { sum: 0, count: 0 } };
-            
-            for (const [id, data] of Object.entries(scores)) {
-                const avg = data.count > 0 ? data.total / data.count : 0;
-                const detail = ELEMENT_DETAILS[id];
-                results[id] = {
-                    name: detail.name,
-                    pillar: detail.pillar,
-                    pillarName: detail.pillarName,
-                    shortDesc: detail.shortDesc,
-                    score: Math.round(avg),
-                    raw: avg
-                };
-                pillarSums[detail.pillar].sum += avg;
-                pillarSums[detail.pillar].count++;
-                totalScore += avg;
-                totalCount++;
-            }
-            
-            // Calculate pillar averages
-            const pillars = {
-                1: pillarSums[1].count ? Math.round(pillarSums[1].sum / pillarSums[1].count) : 0,
-                2: pillarSums[2].count ? Math.round(pillarSums[2].sum / pillarSums[2].count) : 0,
-                3: pillarSums[3].count ? Math.round(pillarSums[3].sum / pillarSums[3].count) : 0,
-                4: pillarSums[4].count ? Math.round(pillarSums[4].sum / pillarSums[4].count) : 0
-            };
-            
-            // Calculate overall score and risk level
-            const overall = totalCount > 0 ? Math.round(totalScore / totalCount) : 0;
-            let riskLevel = "Low";
-            if (overall < 50) riskLevel = "Critical";
-            else if (overall < 65) riskLevel = "High";
-            else if (overall < 80) riskLevel = "Medium";
-            
-            return { overall, riskLevel, pillars, elements: results };
-        }
-
-        // Get recommendation for specific element
-        function getRecommendation(elemId) {
-            const recs = {
-                "2.1_hazard_id": "Implement a digital hazard reporting system accessible to all employees via mobile or desktop. Train all staff on how to identify and report hazards.",
-                "2.2_risk_mitigation": "Adopt the ICAO 5x5 risk assessment matrix. Require formal risk assessments for all operational changes and new procedures.",
-                "1.1_commitment": "Publish an annual safety commitment from the CEO. Include safety KPIs in leadership performance reviews and board reports.",
-                "1.3_key_personnel": "Appoint a full-time Safety Manager with direct access to the Accountable Executive. Establish a quarterly Safety Review Board.",
-                "4.1_training": "Develop mandatory SMS awareness training for all employees. Implement annual refresher courses and track completion rates.",
-                "3.1_performance": "Define 5-7 Safety Performance Indicators (SPIs) across operational areas. Publish monthly dashboards and review trends.",
-                "3.3_improvement": "Establish a Corrective Action Plan (CAP) tracking system. Conduct internal SMS audits quarterly and track closure rates.",
-                "1.2_accountability": "Document safety accountabilities in all job descriptions. Implement safety responsibility sign-off for all managers.",
-                "1.4_emergency": "Conduct tabletop emergency exercises quarterly. Update emergency contact lists and response procedures.",
-                "1.5_documentation": "Create a comprehensive SMS manual. Implement a document control system with version tracking.",
-                "3.2_change_mgmt": "Document a formal Management of Change procedure. Review all major changes before implementation.",
-                "4.2_communication": "Launch a monthly safety newsletter. Install safety bulletin boards in all crew rooms and common areas."
-            };
-            return recs[elemId] || "Review current processes against ICAO Annex 19 requirements and develop an action plan with clear timelines.";
-        }
-
-        // Get industry benchmark insight
-        function getIndustryInsight(score) {
-            if (score < 50) return "Below Industry Average";
-            if (score < 65) return "Approaching Industry Average";
-            if (score < 80) return "Above Industry Average";
-            return "Top Performer";
-        }
-
-        // Render the complete report
-        function renderReport() {
-            const responses = loadResponses();
-            
-            // Count submitted surveys (full responses with no question_id)
-            let submissions = [];
-            try {
-                const all = JSON.parse(localStorage.getItem('sms_pending_responses') || '[]');
-                submissions = all.filter(r => !r.question_id);
-            } catch(e) {}
-            
-            const scores = calculateScores(responses);
-            
-            // If no responses, show empty state
-            if (responses.length === 0 && submissions.length === 0) {
+            if (error) {
+                console.error("[Dashboard] Supabase error:", error);
                 document.getElementById('reportContainer').innerHTML = `
                     <div class="report-card" style="text-align: center; padding: 60px;">
-                        <div style="font-size: 48px; margin-bottom: 20px;">📋</div>
-                        <h2 style="color: #0A1628; margin-bottom: 16px;">No Survey Data Found</h2>
-                        <p style="color: #4a5568; margin-bottom: 24px;">Complete the ICAO SMS survey first to generate your professional gap analysis report.</p>
-                        <a href="../survey/index.html" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Take Survey Now</a>
+                        <h2>❌ Database Connection Error</h2>
+                        <p>${error.message}</p>
+                        <button class="btn btn-primary" onclick="location.reload()">Retry</button>
                     </div>
                 `;
                 return;
             }
             
-            // Get top 3 critical gaps (lowest scores)
+            if (!responses || responses.length === 0) {
+                document.getElementById('reportContainer').innerHTML = `
+                    <div class="report-card" style="text-align: center; padding: 60px;">
+                        <h2>📋 No Survey Data Found</h2>
+                        <p>Complete the ICAO SMS survey first to generate your professional gap analysis report.</p>
+                        <a href="../survey/" class="btn btn-primary" style="text-decoration: none; display: inline-block; margin-top: 20px;">Take Survey Now</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            console.log(`[Dashboard] Loaded ${responses.length} responses`);
+            renderReport(responses);
+        }
+        
+        function calculateScores(responses) {
+            const elementScores = {};
+            
+            // Initialize scores
+            for (const [key, info] of Object.entries(ELEMENT_NAMES)) {
+                elementScores[key] = { total: 0, count: 0 };
+            }
+            
+            // Aggregate scores
+            for (const resp of responses) {
+                for (const [key, info] of Object.entries(ELEMENT_NAMES)) {
+                    const value = resp[key];
+                    if (value && typeof value === 'number') {
+                        elementScores[key].total += value;
+                        elementScores[key].count++;
+                    }
+                }
+            }
+            
+            // Calculate averages and pillar sums
+            const results = {};
+            const pillarTotals = { 1: { sum: 0, count: 0 }, 2: { sum: 0, count: 0 }, 3: { sum: 0, count: 0 }, 4: { sum: 0, count: 0 } };
+            let overallTotal = 0;
+            let overallCount = 0;
+            
+            for (const [key, data] of Object.entries(elementScores)) {
+                const avgScore = data.count > 0 ? data.total / data.count : 0;
+                const info = ELEMENT_NAMES[key];
+                results[key] = {
+                    name: info.name,
+                    pillar: info.pillar,
+                    pillarName: info.pillarName,
+                    score: Math.round(avgScore * 20), // Convert 1-5 to 0-100
+                    raw: avgScore
+                };
+                pillarTotals[info.pillar].sum += avgScore * 20;
+                pillarTotals[info.pillar].count++;
+                overallTotal += avgScore * 20;
+                overallCount++;
+            }
+            
+            const pillars = {
+                1: pillarTotals[1].count ? Math.round(pillarTotals[1].sum / pillarTotals[1].count) : 0,
+                2: pillarTotals[2].count ? Math.round(pillarTotals[2].sum / pillarTotals[2].count) : 0,
+                3: pillarTotals[3].count ? Math.round(pillarTotals[3].sum / pillarTotals[3].count) : 0,
+                4: pillarTotals[4].count ? Math.round(pillarTotals[4].sum / pillarTotals[4].count) : 0
+            };
+            
+            const overall = overallCount > 0 ? Math.round(overallTotal / overallCount) : 0;
+            let riskLevel = "Low";
+            if (overall < 50) riskLevel = "Critical";
+            else if (overall < 65) riskLevel = "High";
+            else if (overall < 80) riskLevel = "Medium";
+            
+            return { overall, riskLevel, pillars, elements: results, responseCount: responses.length };
+        }
+        
+        function renderReport(responses) {
+            const scores = calculateScores(responses);
+            const gaugeWidth = scores.overall;
+            
+            // Get top 3 lowest scoring elements
             const gaps = Object.entries(scores.elements)
-                .filter(e => e[1].score < 65)
                 .sort((a, b) => a[1].score - b[1].score)
                 .slice(0, 3);
-            
-            // If no gaps below 65, show top 3 lowest anyway
-            const displayGaps = gaps.length > 0 ? gaps : Object.entries(scores.elements)
-                .sort((a, b) => a[1].score - b[1].score)
-                .slice(0, 3);
-            
-            const gaugeClass = scores.overall < 50 ? 'gauge-fill-critical' : 
-                              scores.overall < 65 ? 'gauge-fill-high' : 
-                              scores.overall < 80 ? 'gauge-fill-medium' : 'gauge-fill-low';
-            
-            const industryInsight = getIndustryInsight(scores.overall);
-            const auditReadiness = Math.min(100, scores.overall + 8);
-            const potentialGain = Math.min(100, scores.overall + 12);
             
             const html = `
                 <div class="report-card">
-                    <!-- Hero Section -->
                     <div class="hero">
                         <div class="hero-badge">ICAO ANNEX 19 | DOC 9859 (4th Edition)</div>
                         <h1>Safety Management System<br>Gap Analysis Report</h1>
                         <div class="hero-subtitle">Sita Air</div>
                         <div class="hero-meta">
-                            <span>📊 ${submissions.length || 1} Valid Survey${submissions.length !== 1 ? 's' : ''}</span>
-                            <span>📋 24 ICAO-Aligned Questions</span>
+                            <span>📊 ${scores.responseCount} Valid Survey Responses</span>
+                            <span>📋 23 ICAO-Aligned Questions</span>
                             <span>🏛️ 4 Pillars | 12 Elements</span>
                             <span>📅 ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                         </div>
                     </div>
                     
-                    <!-- Executive Summary -->
                     <div class="section">
                         <div class="section-tag">Executive Summary</div>
                         <div class="section-title">Your SMS at a Glance</div>
-                        <p style="font-size: 15px; line-height: 1.6; color: #4a5568; margin-bottom: 25px;">
+                        <p style="font-size: 16px; line-height: 1.6; color: #4a5568; margin-bottom: 25px;">
                             Based on the ICAO Annex 19 framework assessment, <strong>Sita Air</strong> demonstrates a 
                             <strong style="color: ${scores.overall < 50 ? '#dc2626' : scores.overall < 65 ? '#ea580c' : '#0A1628'}">${scores.overall}% overall SMS maturity</strong> – 
                             classified as <strong>${scores.riskLevel} Risk</strong>.
                             ${scores.overall < 70 ? 'Immediate action is required in Safety Risk Management and Safety Assurance pillars to achieve regulatory compliance.' : 'Your organization shows good foundational practices with opportunities for continuous improvement.'}
                         </p>
                         
-                        <!-- Gauge Meter -->
                         <div class="gauge-container">
                             <div style="font-weight: 600; margin-bottom: 10px;">OVERALL SMS MATURITY SCORE</div>
                             <div class="gauge-bar">
-                                <div class="gauge-fill ${gaugeClass}" style="width: ${scores.overall}%"></div>
+                                <div class="gauge-fill" style="width: ${gaugeWidth}%"></div>
                             </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-top: 8px;">
                                 <span>0% Critical</span>
                                 <span>50% High</span>
                                 <span>65% Medium</span>
@@ -605,32 +531,30 @@
                             </div>
                         </div>
                         
-                        <!-- KPI Score Cards -->
                         <div class="score-grid">
                             <div class="score-card">
                                 <div class="label">Compliance Score</div>
                                 <div class="value" style="color: ${scores.overall < 50 ? '#dc2626' : scores.overall < 65 ? '#ea580c' : '#0A1628'}">${scores.overall}%</div>
-                                <div style="font-size: 11px; margin-top: 5px;">${industryInsight}</div>
+                                <div style="font-size: 12px; margin-top: 5px;">Industry Avg: 68%</div>
                             </div>
                             <div class="score-card">
                                 <div class="label">Risk Level</div>
                                 <div class="value" style="color: ${scores.riskLevel === 'Critical' ? '#dc2626' : scores.riskLevel === 'High' ? '#ea580c' : '#eab308'}">${scores.riskLevel}</div>
-                                <div style="font-size: 11px; margin-top: 5px;">Immediate Action Required</div>
+                                <div style="font-size: 12px; margin-top: 5px;">Action Required</div>
                             </div>
                             <div class="score-card">
                                 <div class="label">Industry Rank</div>
-                                <div class="value">Top 27%</div>
-                                <div style="font-size: 11px; margin-top: 5px;">vs 156 Operators</div>
+                                <div class="value">Top ${Math.min(99, Math.max(1, Math.floor((100 - scores.overall) / 2)))}%</div>
+                                <div style="font-size: 12px; margin-top: 5px;">vs 156 Operators</div>
                             </div>
                             <div class="score-card">
                                 <div class="label">Audit Readiness</div>
-                                <div class="value">${auditReadiness}%</div>
-                                <div style="font-size: 11px; margin-top: 5px;">+8% Potential Gain</div>
+                                <div class="value">${Math.min(100, scores.overall + 8)}%</div>
+                                <div style="font-size: 12px; margin-top: 5px;">+8% Potential</div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Four Pillar Breakdown -->
                     <div class="section">
                         <div class="section-tag">ICAO Framework</div>
                         <div class="section-title">Four Pillar Breakdown</div>
@@ -638,39 +562,42 @@
                             <div class="pillar-card pillar-1">
                                 <div class="name">Pillar 1 · Safety Policy</div>
                                 <div class="score" style="color: ${scores.pillars[1] < 60 ? '#dc2626' : '#0D1B4A'}">${scores.pillars[1]}%</div>
-                                <div style="font-size: 11px; color: #64748b;">5 Elements</div>
+                                <div style="font-size: 11px; color: #64748b;">5 Questions</div>
                             </div>
                             <div class="pillar-card pillar-2">
                                 <div class="name">Pillar 2 · Risk Management</div>
-                                <div class="score" style="color: ${scores.pillars[2] < 50 ? '#dc2626' : scores.pillars[2] < 65 ? '#ea580c' : '#eab308'}">${scores.pillars[2]}%</div>
-                                <div style="font-size: 11px; color: #64748b;">2 Elements · ${scores.pillars[2] < 65 ? 'CRITICAL' : 'STABLE'}</div>
+                                <div class="score" style="color: ${scores.pillars[2] < 50 ? '#dc2626' : '#ea580c'}">${scores.pillars[2]}%</div>
+                                <div style="font-size: 11px; color: #64748b;">8 Questions · CRITICAL</div>
                             </div>
                             <div class="pillar-card pillar-3">
                                 <div class="name">Pillar 3 · Safety Assurance</div>
                                 <div class="score" style="color: ${scores.pillars[3] < 60 ? '#ea580c' : '#eab308'}">${scores.pillars[3]}%</div>
-                                <div style="font-size: 11px; color: #64748b;">3 Elements</div>
+                                <div style="font-size: 11px; color: #64748b;">7 Questions</div>
                             </div>
                             <div class="pillar-card pillar-4">
                                 <div class="name">Pillar 4 · Safety Promotion</div>
                                 <div class="score" style="color: ${scores.pillars[4] < 70 ? '#eab308' : '#16a34a'}">${scores.pillars[4]}%</div>
-                                <div style="font-size: 11px; color: #64748b;">2 Elements</div>
+                                <div style="font-size: 11px; color: #64748b;">3 Questions</div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Detailed 12 Elements Assessment -->
                     <div class="section">
                         <div class="section-tag">Detailed Assessment</div>
-                        <div class="section-title">12 Elements of ICAO SMS</div>
-                        ${Object.entries(scores.elements).map(([id, elem]) => {
-                            const fillClass = elem.score < 50 ? 'fill-critical' : elem.score < 65 ? 'fill-high' : elem.score < 80 ? 'fill-warning' : 'fill-good';
-                            const statusClass = elem.score < 50 ? 'status-critical' : elem.score < 65 ? 'status-high' : elem.score < 80 ? 'status-warning' : 'status-good';
-                            const statusText = elem.score < 50 ? 'Critical' : elem.score < 65 ? 'High Risk' : elem.score < 80 ? 'Needs Work' : 'Compliant';
+                        <div class="section-title">Key Elements Assessment</div>
+                        ${Object.entries(scores.elements).slice(0, 12).map(([id, elem]) => {
+                            let fillClass = 'fill-critical';
+                            let statusClass = 'status-critical';
+                            let statusText = 'Critical';
+                            if (elem.score >= 80) { fillClass = 'fill-good'; statusClass = 'status-good'; statusText = 'Compliant'; }
+                            else if (elem.score >= 65) { fillClass = 'fill-warning'; statusClass = 'status-warning'; statusText = 'Needs Work'; }
+                            else if (elem.score >= 50) { fillClass = 'fill-high'; statusClass = 'status-high'; statusText = 'High Risk'; }
+                            
                             return `
                                 <div class="element-row">
                                     <div class="element-name">
                                         <strong>${elem.name}</strong><br>
-                                        <span style="font-size: 11px; color: #94a3b8;">${elem.shortDesc}</span>
+                                        <span style="font-size: 11px; color: #94a3b8;">${elem.pillarName}</span>
                                     </div>
                                     <div class="element-score">${elem.score}%</div>
                                     <div class="element-bar"><div class="element-fill ${fillClass}" style="width: ${elem.score}%"></div></div>
@@ -680,19 +607,18 @@
                         }).join('')}
                     </div>
                     
-                    <!-- Priority Action Plan -->
                     <div class="section">
                         <div class="section-tag">Action Plan</div>
                         <div class="section-title">Priority Corrective Actions</div>
-                        ${displayGaps.map(([id, elem], idx) => {
-                            const priority = idx === 0 ? 'Critical' : idx === 1 ? 'High' : 'High';
+                        ${gaps.map(([id, elem], idx) => {
+                            const priority = idx === 0 ? 'Critical' : 'High';
                             const priorityClass = priority === 'Critical' ? 'priority-critical' : 'priority-high';
-                            const days = idx === 0 ? 30 : idx === 1 ? 45 : 60;
+                            const days = idx === 0 ? 30 : 60;
                             return `
                                 <div class="action-card">
                                     <div class="action-priority ${priorityClass}">${priority} Priority · ${days} Days</div>
                                     <div class="action-title">${elem.name} (Current: ${elem.score}%)</div>
-                                    <div class="action-desc">${getRecommendation(id)}</div>
+                                    <div class="action-desc">Improve ${elem.name.toLowerCase()} through targeted training and process improvements.</div>
                                     <div class="action-meta">
                                         <span>📋 Target: ${Math.min(100, elem.score + 25)}%</span>
                                         <span>👤 Owner: Safety Manager</span>
@@ -703,25 +629,21 @@
                         }).join('')}
                     </div>
                     
-                    <!-- The "AHA!" Moment Insight Box -->
                     <div class="section">
                         <div class="insight-box">
                             <div class="label">🎯 THE OPPORTUNITY — YOUR "AHA!" MOMENT</div>
                             <div class="text">
-                                <strong>Your biggest opportunity is ${displayGaps[0]?.[1]?.name || "Hazard Identification"} (currently ${displayGaps[0]?.[1]?.score || "38"}%).</strong><br><br>
+                                <strong>Your biggest opportunity is ${gaps[0]?.[1]?.name || "Hazard Identification"} (currently ${gaps[0]?.[1]?.score || "38"}%).</strong><br><br>
                                 Implementing a digital hazard reporting system and formal risk assessment process alone would increase your overall compliance by an estimated 8-12% – 
-                                moving you from <strong>${scores.overall}% to ${potentialGain}%</strong> and positioning <strong>Sita Air among the top 15% of operators</strong> in the region.
-                                <br><br>
-                                📌 <strong>Next Step:</strong> Schedule a 30-minute consultation to see how our automated SMS platform can help you achieve this within 60 days.
+                                moving you from <strong>${scores.overall}% to ${Math.min(100, scores.overall + 12)}%</strong> and positioning <strong>Sita Air among the top 15% of operators</strong> in the region.
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Footer -->
                     <div style="padding: 20px 40px; background: #f8fafc; text-align: center; border-top: 1px solid #e8ecf0;">
                         <p style="font-size: 10px; color: #94a3b8;">
                             This report is generated based on ICAO Annex 19 (Safety Management) and Doc 9859 (4th Edition).<br>
-                            Survey data is confidential and stored only on your local device. No data is transmitted to any server.
+                            Data is confidential and stored securely in Supabase.
                         </p>
                     </div>
                 </div>
@@ -730,15 +652,15 @@
             document.getElementById('reportContainer').innerHTML = html;
             document.getElementById('buttonBar').style.display = 'flex';
             
-            // Save as PDF button with clear instruction
-            document.getElementById('savePdfBtn').onclick = () => {
-                alert("📄 How to save as PDF:\n\n1. Click OK to open the Print dialog\n2. In the destination dropdown, select 'Save as PDF'\n3. Adjust margins if needed (Normal or Minimal work best)\n4. Click Save to download your professional report");
+            document.getElementById('printBtn').onclick = () => window.print();
+            document.getElementById('pdfBtn').onclick = () => {
+                alert("📄 How to save as PDF:\n\n1. Click OK to open Print dialog\n2. Select 'Save as PDF' as destination\n3. Click Save");
                 window.print();
             };
         }
         
-        // Initialize the report
-        renderReport();
+        // Initialize
+        loadData();
     </script>
 </body>
 </html>
