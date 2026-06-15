@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sita Air SMS | ICAO Annex 19</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ═══ PHASE 1: LANDING ═══ -->
+    <section id="landing" class="phase phase-landing">
+      <div class="landing-inner">
+
+        <!-- ═══ HERO SECTION ═══ -->
+        <header class="landing-hero">
+          <div class="landing-hero-top">
+            <button class="lang-toggle" id="lang-toggle" aria-label="Switch language">
+              <span class="lang-icon">&#x1F310;</span>
+              <span class="lang-text"></span>
+            </button>
+          </div>
+          <div class="landing-hero-content">
+            <div class="sita-logo-container">
+              <img src="logo.png" alt="Sita Air" class="survey-logo">
+            </div>
+            <h1 class="landing-title" data-i18n="landing_title"></h1>
+            <p class="landing-subtitle" data-i18n="landing_subtitle"></p>
+            <p class="landing-compliance" data-i18n="landing_compliance"></p>
+            <div class="landing-start-area">
+              <button class="landing-start-btn" data-i18n="landing_start" id="landing-start-btn"></button>
+              <p class="landing-privacy-note" data-i18n="landing_privacy_note"></p>
+            </div>
+          </div>
+        </header>
+
+        <!-- ═══ CONTENT CARDS ═══ -->
+        <div class="landing-cards">
+
+          <!-- Purpose -->
+          <section class="landing-card landing-purpose">
+            <h2 class="landing-card-title" data-i18n="landing_about_title"></h2>
+            <div class="landing-card-body" data-i18n="landing_about_body"></div>
+          </section>
+
+          <!-- Survey details -->
+          <section class="landing-card landing-details">
+            <div class="landing-details-grid">
+              <div class="landing-detail-item">
+                <span class="landing-detail-icon">&#x23F1;&#xFE0F;</span>
+                <div>
+                  <strong>Time to complete:</strong>
+                  <span data-i18n="landing_details_time"></span>
+                </div>
+              </div>
+              <div class="landing-detail-item">
+                <span class="landing-detail-icon">&#x1F4CB;</span>
+                <div>
+                  <strong>Questions:</strong>
+                  <span data-i18n="landing_details_questions"></span>
+                </div>
+              </div>
+              <div class="landing-detail-item">
+                <span class="landing-detail-icon">&#x1F512;</span>
+                <div>
+                  <strong>Privacy:</strong>
+                  <span data-i18n="landing_details_privacy"></span>
+                </div>
+              </div>
+              <div class="landing-detail-item">
+                <span class="landing-detail-icon">&#x1F30D;</span>
+                <div>
+                  <strong>Languages:</strong>
+                  <span data-i18n="landing_details_languages"></span>
+                </div>
+              </div>
+              <div class="landing-detail-item">
+                <span class="landing-detail-icon">&#x1F4F1;</span>
+                <div>
+                  <strong>Device:</strong>
+                  <span data-i18n="landing_details_device"></span>
+                </div>
+              </div>
+              <div class="landing-detail-item">
+                <span class="landing-detail-icon">&#x1F4E5;</span>
+                <div>
+                  <strong>Your Data:</strong>
+                  <span data-i18n="landing_details_data"></span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Categories preview -->
+          <section class="landing-card landing-categories">
+            <h2 class="landing-card-title" data-i18n="landing_categories_title"></h2>
+            <div class="landing-category-pills" id="landing-category-pills"></div>
+          </section>
+
+          <!-- ICAO compliance -->
+          <section class="landing-card landing-icao">
+            <h2 class="landing-card-title" data-i18n="landing_icao_title"></h2>
+            <div class="landing-card-body" data-i18n="landing_icao_body"></div>
+          </section>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══ PHASE 2: SURVEY ═══ -->
+    <div id="sms-survey-root" class="phase phase-survey hidden"></div>
+
+  </div>
+
+  <!-- ═══ GLOBAL FOOTER (both phases) ═══ -->
+  <footer class="app-footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <p class="footer-text">
+          This survey is supported by <strong>Ghanshyam Acharya</strong>
+        </p>
+        <p class="footer-subtext">
+          SMS Safety Culture Assessment Tool &bull; ICAO Annex 19 &amp; Doc 9859
+        </p>
+      </div>
+      <div class="footer-right">
+        <a href="#" class="admin-login-link" id="admin-login" title="Admin Panel">
+          <span class="admin-icon">&#x1F512;</span>
+          <span class="admin-text">Admin</span>
+        </a>
+        <a href="#" class="dashboard-login-link" id="dashboard-login" title="Safety Officer Dashboard Access">
+          <span class="login-icon">&#x1F512;</span>
+          <span class="login-text">Dashboard</span>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scroll-to-top button -->
+  <button class="scroll-top-btn" id="scroll-top-btn" aria-label="Scroll to top" title="Back to top">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+  </button>
+
+  <!-- Leave confirmation dialog -->
+  <div class="leave-overlay hidden" id="leave-overlay">
+    <div class="leave-dialog">
+      <h3 data-i18n="landing_leave_title"></h3>
+      <p data-i18n="landing_leave_body"></p>
+      <div class="leave-actions">
+        <button class="btn btn-primary" id="leave-stay-btn" data-i18n="landing_leave_stay"></button>
+        <button class="btn btn-outline" id="leave-leave-btn" data-i18n="landing_leave_leave"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Login Modal -->
+  <div class="modal-overlay hidden" id="login-modal">
+    <div class="modal-card login-modal-card">
+      <div class="login-modal-header">
+        <span class="login-modal-icon">&#x1F6E1;&#xFE0F;</span>
+        <h2>SMS Dashboard Access</h2>
+        <p class="login-modal-subtitle">Safety Officer Authentication</p>
+      </div>
+      <button class="modal-close" id="login-modal-close">&times;</button>
+      <form id="login-form" class="login-form">
+        <div class="form-group">
+          <label for="login-password">Enter Access Code</label>
+          <input
+            type="password"
+            id="login-password"
+            placeholder="Enter dashboard access code"
+            autocomplete="off"
+            required
+          >
+        </div>
+        <div class="login-error hidden" id="login-error">
+          Invalid access code. Please try again.
+        </div>
+        <button type="submit" class="sms-btn sms-btn-primary btn-full">
+          Access Dashboard
+        </button>
+      </form>
+      <p class="login-hint">
+        This area is restricted to authorized safety personnel.
+      </p>
+    </div>
+  </div>
+
+  <!-- Admin Modal -->
+  <div class="modal-overlay hidden" id="admin-modal">
+    <div class="modal-card admin-modal-card">
+      <div class="admin-modal-header">
+        <span class="admin-modal-icon">&#x1F6E1;&#xFE0F;</span>
+        <h2>Admin Panel</h2>
+        <p class="admin-modal-subtitle">Restricted Access</p>
+      </div>
+      <button class="modal-close" id="admin-modal-close">&times;</button>
+
+      <!-- Step 1: Password -->
+      <form id="admin-login-form" class="admin-login-form">
+        <div class="form-group">
+          <label for="admin-password">Enter Admin Password</label>
+          <input type="password" id="admin-password" placeholder="Enter password" autocomplete="off" required>
+        </div>
+        <div class="admin-error hidden" id="admin-error">Incorrect password. Access denied.</div>
+        <button type="submit" class="btn btn-primary btn-full">Authenticate</button>
+      </form>
+
+      <!-- Step 2: Admin Panel (hidden until authenticated) -->
+      <div class="admin-panel-content hidden" id="admin-panel-content">
+        <div class="admin-authenticated">
+          <span class="admin-status-badge">&#x2705; Authenticated</span>
+        </div>
+
+        <!-- Generate Section -->
+        <div class="admin-section">
+          <div class="admin-section-header">
+            <span class="section-icon">&#x1F4CA;</span>
+            <div>
+              <h3>Generate Dummy Data</h3>
+              <p>Create realistic test survey responses</p>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="gen-count">Number of Responses</label>
+            <input type="number" id="gen-count" value="20" min="1" max="100">
+          </div>
+
+          <div class="form-group">
+            <label>Response Profiles</label>
+            <div class="checkbox-grid">
+              <label class="checkbox-label"><input type="checkbox" class="gen-profile" value="optimistic" checked> Optimistic</label>
+              <label class="checkbox-label"><input type="checkbox" class="gen-profile" value="positive" checked> Positive</label>
+              <label class="checkbox-label"><input type="checkbox" class="gen-profile" value="neutral" checked> Neutral</label>
+              <label class="checkbox-label"><input type="checkbox" class="gen-profile" value="negative" checked> Negative</label>
+              <label class="checkbox-label"><input type="checkbox" class="gen-profile" value="fearful" checked> Fearful</label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="gen-nepali" checked> Include Nepali responses
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="gen-partial" checked> Include partial completions
+            </label>
+          </div>
+
+          <button class="btn btn-primary btn-full" id="btn-generate">
+            &#x26A1; Generate Dummy Data
+          </button>
+          <div class="gen-status hidden" id="gen-status"></div>
+        </div>
+
+        <hr class="admin-divider">
+
+        <!-- Purge Section -->
+        <div class="admin-section">
+          <div class="admin-section-header">
+            <span class="section-icon">&#x1F5D1;&#xFE0F;</span>
+            <div>
+              <h3>Purge All Dummy Data</h3>
+              <p>Delete all test responses</p>
+            </div>
+          </div>
+
+          <div class="admin-stats" id="admin-stats">
+            <div class="stat-row">
+              <span>Browser Cached Responses:</span>
+              <strong id="stat-browser-count">--</strong>
+            </div>
+            <div class="stat-row">
+              <span>Downloaded JSONs:</span>
+              <strong id="stat-json-count">--</strong>
+            </div>
+            <div class="stat-row">
+              <span>Compiled CSV:</span>
+              <strong id="stat-csv-count">--</strong>
+            </div>
+          </div>
+
+          <button class="btn btn-danger btn-full" id="btn-purge-data">
+            &#x1F5D1;&#xFE0F; Purge All Dummy Data
+          </button>
+
+          <!-- Purge Confirmation -->
+          <div class="purge-confirm hidden" id="purge-confirm">
+            <p class="purge-confirm-text">
+              &#x26A0;&#xFE0F; This cannot be undone. Type <strong>DELETE</strong> to confirm:
+            </p>
+            <input type="text" id="purge-confirm-input" placeholder="Type DELETE" autocomplete="off">
+            <div class="purge-confirm-buttons">
+              <button class="btn btn-outline" id="btn-purge-cancel">Cancel</button>
+              <button class="btn btn-danger" id="btn-purge-confirm" disabled>Delete Everything</button>
+            </div>
+          </div>
+
+          <div class="purge-success hidden" id="purge-success"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- App Scripts -->
+  <script src="default_questions.js"></script>
+  <script src="translations.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
