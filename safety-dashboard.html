@@ -1,11 +1,13 @@
 <!--
 ================================================================================
 FILE: SurveySMS/safety-dashboard.html
-VERSION: 2.0
+VERSION: 1.0.0
 REVISION DATE: 2026-06-17
-PURPOSE: Safety Officer Analytics Dashboard - Direct analytics view with 4 pillars, pie chart, and gap analysis
-REVISED PURPOSE: Complete redesign - shows analytics, survey statistics, and industry comparison
-AFFECTED: Safety Officers (safety@*.com)
+PURPOSE: Safety Officer Dashboard - Analytics view with 4 pillars, pie chart, gap analysis, and CAP
+DEPENDENCIES: css/global.css, css/analytics/shared.css, js/utils.js, js/credentials.js, js/storage.js, js/auth.js, js/translations.js, js/safety-dashboard.js, Chart.js (CDN)
+USAGE: Safety Officers (safety@*.com)
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
 ================================================================================
 -->
 
@@ -23,7 +25,15 @@ AFFECTED: Safety Officers (safety@*.com)
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
     </script>
 
+    <!-- Foundation Scripts (Always First) -->
+    <script src="js/utils.js"></script>
+    <script src="js/credentials.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/translations.js"></script>
+
     <style>
+        /* ===== CSS Variables & Reset ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
@@ -33,10 +43,7 @@ AFFECTED: Safety Officers (safety@*.com)
             padding: 20px;
         }
 
-        .dashboard-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+        .dashboard-container { max-width: 1400px; margin: 0 auto; }
 
         /* ===== Header ===== */
         .dashboard-header {
@@ -75,6 +82,16 @@ AFFECTED: Safety Officers (safety@*.com)
             border-radius: 50px;
             font-weight: 600;
             font-size: 0.9rem;
+        }
+
+        .dashboard-header .tenant .demo-badge {
+            background: #0a2e4a;
+            color: #e8a838;
+            padding: 2px 8px;
+            border-radius: 50px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            margin-left: 5px;
         }
 
         .dashboard-header .role-badge {
@@ -145,7 +162,7 @@ AFFECTED: Safety Officers (safety@*.com)
             font-size: 0.95rem;
         }
 
-        /* ===== Stats Grid ===== */
+        /* ===== Stats Grid - 3 Cards ===== */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -226,9 +243,7 @@ AFFECTED: Safety Officers (safety@*.com)
             text-align: center;
         }
 
-        .pillar-chart-card h3 i {
-            color: #e8a838;
-        }
+        .pillar-chart-card h3 i { color: #e8a838; }
 
         .pillar-chart-card .chart-container {
             position: relative;
@@ -287,10 +302,7 @@ AFFECTED: Safety Officers (safety@*.com)
             margin-bottom: 8px;
         }
 
-        .pillar-card .pillar-header h4 {
-            color: #0a2e4a;
-            font-size: 0.95rem;
-        }
+        .pillar-card .pillar-header h4 { color: #0a2e4a; font-size: 0.95rem; }
 
         .pillar-card .pillar-header .pillar-score {
             font-size: 1.4rem;
@@ -365,9 +377,7 @@ AFFECTED: Safety Officers (safety@*.com)
             font-size: 1.1rem;
         }
 
-        .chart-card h3 i {
-            color: #e8a838;
-        }
+        .chart-card h3 i { color: #e8a838; }
 
         .chart-card .chart-container {
             position: relative;
@@ -388,9 +398,7 @@ AFFECTED: Safety Officers (safety@*.com)
             margin-bottom: 20px;
         }
 
-        .gap-analysis h3 i {
-            color: #e8a838;
-        }
+        .gap-analysis h3 i { color: #e8a838; }
 
         .gap-grid {
             display: grid;
@@ -408,10 +416,25 @@ AFFECTED: Safety Officers (safety@*.com)
             align-items: center;
         }
 
-        .gap-item.critical { border-left-color: #dc3545; background: #fdf2f2; }
-        .gap-item.moderate { border-left-color: #fd7e14; background: #fef9f0; }
-        .gap-item.minor { border-left-color: #ffc107; background: #fffcf0; }
-        .gap-item.compliant { border-left-color: #28a745; background: #d4edda; }
+        .gap-item.critical {
+            border-left-color: #dc3545;
+            background: #fdf2f2;
+        }
+
+        .gap-item.moderate {
+            border-left-color: #fd7e14;
+            background: #fef9f0;
+        }
+
+        .gap-item.minor {
+            border-left-color: #ffc107;
+            background: #fffcf0;
+        }
+
+        .gap-item.compliant {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
 
         .gap-item .element-name {
             font-weight: 600;
@@ -450,9 +473,20 @@ AFFECTED: Safety Officers (safety@*.com)
             border-radius: 50px;
         }
 
-        .gap-item .score .gap-value.positive { color: #28a745; background: #d4edda; }
-        .gap-item .score .gap-value.negative { color: #dc3545; background: #f8d7da; }
-        .gap-item .score .gap-value.neutral { color: #fd7e14; background: #fff3cd; }
+        .gap-item .score .gap-value.positive {
+            color: #28a745;
+            background: #d4edda;
+        }
+
+        .gap-item .score .gap-value.negative {
+            color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .gap-item .score .gap-value.neutral {
+            color: #fd7e14;
+            background: #fff3cd;
+        }
 
         /* ===== CAP Section ===== */
         .cap-section {
@@ -468,8 +502,12 @@ AFFECTED: Safety Officers (safety@*.com)
             margin-bottom: 10px;
         }
 
-        .cap-section h3 i {
-            color: #e8a838;
+        .cap-section h3 i { color: #e8a838; }
+
+        .cap-section .cap-intro {
+            color: #6c757d;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
         }
 
         .cap-grid {
@@ -518,9 +556,20 @@ AFFECTED: Safety Officers (safety@*.com)
             border-radius: 50px;
         }
 
-        .cap-item .cap-header .cap-priority.high { background: #dc3545; color: white; }
-        .cap-item .cap-header .cap-priority.medium { background: #fd7e14; color: white; }
-        .cap-item .cap-header .cap-priority.low { background: #28a745; color: white; }
+        .cap-item .cap-header .cap-priority.high {
+            background: #dc3545;
+            color: white;
+        }
+
+        .cap-item .cap-header .cap-priority.medium {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .cap-item .cap-header .cap-priority.low {
+            background: #28a745;
+            color: white;
+        }
 
         .cap-item .cap-title {
             font-weight: 600;
@@ -603,20 +652,9 @@ AFFECTED: Safety Officers (safety@*.com)
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         }
 
-        .btn-export.pdf {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn-export.excel {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-export.print {
-            background: #0a2e4a;
-            color: white;
-        }
+        .btn-export.pdf { background: #dc3545; color: white; }
+        .btn-export.excel { background: #28a745; color: white; }
+        .btn-export.print { background: #0a2e4a; color: white; }
 
         /* ===== Responsive ===== */
         @media (max-width: 992px) {
@@ -625,7 +663,6 @@ AFFECTED: Safety Officers (safety@*.com)
             .pillar-summary-right { flex: 1; }
             .pillar-chart-card .chart-container { height: 200px; max-width: 240px; }
             .charts-grid { grid-template-columns: 1fr; }
-            .overview-banner { flex-direction: column; text-align: center; }
         }
 
         @media (max-width: 768px) {
@@ -637,6 +674,7 @@ AFFECTED: Safety Officers (safety@*.com)
             .cap-grid { grid-template-columns: 1fr; }
             .export-section { flex-direction: column; align-items: center; }
             .btn-export { width: 100%; justify-content: center; }
+            .overview-banner { flex-direction: column; text-align: center; }
         }
 
         @media (max-width: 480px) {
@@ -646,18 +684,10 @@ AFFECTED: Safety Officers (safety@*.com)
 
         /* ===== Print ===== */
         @media print {
-            .logout-btn,
-            .export-section,
-            .btn-export,
-            .dashboard-header .role-badge { display: none !important; }
+            .logout-btn, .export-section, .btn-export, .dashboard-header .role-badge { display: none !important; }
             .dashboard-container { padding: 0; }
             .dashboard-header { background: #0a2e4a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .stat-card,
-            .pillar-card,
-            .pillar-chart-card,
-            .chart-card,
-            .gap-analysis,
-            .cap-section {
+            .stat-card, .pillar-card, .pillar-chart-card, .chart-card, .gap-analysis, .cap-section {
                 break-inside: avoid;
                 page-break-inside: avoid;
                 box-shadow: none !important;
@@ -707,23 +737,21 @@ AFFECTED: Safety Officers (safety@*.com)
             </div>
         </div>
 
-        <!-- ===== STATS ===== -->
+        <!-- ===== STATS - 3 Cards ===== -->
         <div class="stats-grid" id="statsGrid">
-            <div class="stat-card blue">
-                <div class="icon"><i class="fas fa-clipboard-list"></i></div>
-                <div class="number" id="totalSessions">0</div>
-                <div class="label">Total Survey Sessions</div>
-            </div>
+            <!-- Completed Surveys -->
             <div class="stat-card green">
                 <div class="icon"><i class="fas fa-check-circle"></i></div>
                 <div class="number" id="completedSessions">0</div>
-                <div class="label">Completed Sessions</div>
+                <div class="label">Completed Surveys</div>
             </div>
+            <!-- Overall Score -->
             <div class="stat-card orange">
                 <div class="icon"><i class="fas fa-star"></i></div>
                 <div class="number" id="avgScore">0.0</div>
                 <div class="label">Overall Safety Score</div>
             </div>
+            <!-- Critical Gaps -->
             <div class="stat-card red">
                 <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
                 <div class="number" id="criticalGaps">0</div>
@@ -784,7 +812,7 @@ AFFECTED: Safety Officers (safety@*.com)
             <!-- ===== CAP ===== -->
             <div class="cap-section">
                 <h3><i class="fas fa-tasks"></i> Corrective Action Plan (CAP)</h3>
-                <p style="color:#6c757d;font-size:0.95rem;margin-bottom:20px;">
+                <p class="cap-intro">
                     Based on the SMS gap analysis, here are recommended corrective actions organized by pillar.
                     Prioritize high-priority items first for maximum impact.
                 </p>
@@ -808,706 +836,8 @@ AFFECTED: Safety Officers (safety@*.com)
         </div>
     </div>
 
-    <script src="js/translations.js"></script>
-    <script>
-        // ============================================================
-        // SAFETY OFFICER DASHBOARD - ANALYTICS DIRECT VIEW
-        // ============================================================
-
-        // ============================================================
-        // CONFIGURATION
-        // ============================================================
-        const ELEMENT_NAMES = {
-            1: 'Safety Policy & Objectives',
-            2: 'Safety Accountabilities',
-            3: 'Hazard Identification',
-            4: 'Risk Assessment & Mitigation',
-            5: 'Safety Performance Monitoring',
-            6: 'Internal Safety Audits',
-            7: 'Management of Change',
-            8: 'Continuous Improvement',
-            9: 'Safety Training & Competence',
-            10: 'Safety Communication',
-            11: 'Safety Culture',
-            12: 'Emergency Response Planning'
-        };
-
-        const ELEMENT_PILLARS = {
-            1: 'Policy',
-            2: 'Policy',
-            3: 'Risk Management',
-            4: 'Risk Management',
-            5: 'Assurance',
-            6: 'Assurance',
-            7: 'Assurance',
-            8: 'Assurance',
-            9: 'Promotion',
-            10: 'Promotion',
-            11: 'Promotion',
-            12: 'Assurance'
-        };
-
-        const PILLAR_ICONS = {
-            'Policy': 'fa-bullseye',
-            'Risk Management': 'fa-chart-line',
-            'Assurance': 'fa-check-circle',
-            'Promotion': 'fa-users'
-        };
-
-        const PILLAR_COLORS = {
-            'Policy': '#2e7daf',
-            'Risk Management': '#e8a838',
-            'Assurance': '#28a745',
-            'Promotion': '#dc3545'
-        };
-
-        // ============================================================
-        // STATE
-        // ============================================================
-        let tenantId = null;
-        let airlineName = null;
-        let airlineData = null;
-        let userData = null;
-        let elementChart = null;
-        let gapChart = null;
-        let pillarChart = null;
-
-        // ============================================================
-        // GET AIRLINE DATA FROM LOCALSTORAGE
-        // ============================================================
-        function getAirlineData(tenantId) {
-            const completed = parseInt(localStorage.getItem(`sms_${tenantId}_completed_sessions`) || '0');
-            if (completed === 0) return null;
-
-            const allAnswers = [];
-            for (let i = 1; i <= 5; i++) {
-                const answers = JSON.parse(localStorage.getItem(`sms_${tenantId}_session_${i}_answers`) || '[]');
-                if (answers.length > 0) {
-                    allAnswers.push(...answers);
-                }
-            }
-
-            if (allAnswers.length === 0) return null;
-
-            // Calculate element averages
-            const elementScores = {};
-            const questionsPerElement = 2;
-
-            allAnswers.forEach((answer, index) => {
-                if (answer !== null && answer !== undefined) {
-                    const elementIndex = Math.floor(index / questionsPerElement) + 1;
-                    if (!elementScores[elementIndex]) elementScores[elementIndex] = [];
-                    elementScores[elementIndex].push(answer);
-                }
-            });
-
-            const elementAverages = {};
-            for (const key in elementScores) {
-                const scores = elementScores[key];
-                elementAverages[key] = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100;
-            }
-
-            // Calculate pillar averages
-            const pillarScores = {};
-            for (const pillar of ['Policy', 'Risk Management', 'Assurance', 'Promotion']) {
-                pillarScores[pillar] = { scores: [], elements: [] };
-            }
-
-            for (let i = 1; i <= 12; i++) {
-                const pillar = ELEMENT_PILLARS[i];
-                if (elementAverages[i] !== undefined) {
-                    pillarScores[pillar].scores.push(elementAverages[i]);
-                    pillarScores[pillar].elements.push(i);
-                }
-            }
-
-            const pillarAverages = {};
-            for (const pillar in pillarScores) {
-                const scores = pillarScores[pillar].scores;
-                pillarAverages[pillar] = scores.length > 0 ?
-                    Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100 :
-                    0;
-            }
-
-            const allScores = Object.values(elementAverages);
-            const overallAverage = allScores.length > 0 ?
-                Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 100) / 100 :
-                0;
-
-            const targetScore = 4.5;
-            const gaps = {};
-            let criticalCount = 0;
-
-            for (let i = 1; i <= 12; i++) {
-                const current = elementAverages[i] || 0;
-                const gap = Math.round((targetScore - current) * 100) / 100;
-
-                let severity = 'Compliant';
-                if (gap > 0 && gap <= 0.5) severity = 'Minor Gap';
-                else if (gap > 0.5 && gap <= 1.0) severity = 'Moderate Gap';
-                else if (gap > 1.0) { severity = 'Critical Gap';
-                    criticalCount++; }
-
-                gaps[i] = {
-                    current: current,
-                    target: targetScore,
-                    gap: gap,
-                    severity: severity,
-                    name: ELEMENT_NAMES[i],
-                    pillar: ELEMENT_PILLARS[i]
-                };
-            }
-
-            // Get completion date for survey period
-            const completionDate = localStorage.getItem(`sms_${tenantId}_last_completion_date`) || null;
-
-            return {
-                name: airlineName,
-                tenantId: tenantId,
-                sessionsCompleted: completed,
-                totalSessions: 5,
-                elementAverages: elementAverages,
-                pillarAverages: pillarAverages,
-                overallAverage: overallAverage,
-                criticalGaps: criticalCount,
-                gaps: gaps,
-                totalQuestions: allAnswers.length,
-                completionDate: completionDate
-            };
-        }
-
-        // ============================================================
-        // GET SURVEY PERIOD
-        // ============================================================
-        function getSurveyPeriod(completionDate) {
-            if (!completionDate) return 'Not available';
-            const date = new Date(completionDate);
-            // Get the first day of the month
-            const start = new Date(date.getFullYear(), date.getMonth(), 1);
-            // Get the last day of the month
-            const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-            const options = { year: 'numeric', month: 'short', day: 'numeric' };
-            return `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
-        }
-
-        // ============================================================
-        // INITIALIZATION
-        // ============================================================
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🛡️ Safety Officer Dashboard Loaded');
-
-            // Get user data
-            userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
-
-            if (!userData.email) {
-                window.location.href = 'login.html';
-                return;
-            }
-
-            tenantId = userData.tenantId || 'default';
-            airlineName = userData.airline || 'Aviation Organization';
-
-            // Update UI
-            document.getElementById('userAvatar').src = userData.picture || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(airlineName) + '&background=0a2e4a&color=fff&size=128';
-            document.getElementById('userName').textContent = userData.name || airlineName;
-            document.getElementById('userEmail').textContent = userData.email || '';
-            document.getElementById('tenantBadge').innerHTML = `
-                ${airlineName}
-                <span class="demo-badge">DEMO</span>
-            `;
-            document.getElementById('airlineName').textContent = airlineName;
-
-            // Load data
-            airlineData = getAirlineData(tenantId);
-
-            if (!airlineData) {
-                document.getElementById('noDataMessage').style.display = 'block';
-                document.getElementById('statsGrid').style.display = 'none';
-                document.getElementById('chartsSection').style.display = 'none';
-                document.querySelector('.pillar-summary-wrapper').style.display = 'none';
-                document.getElementById('surveyPeriod').textContent = 'No survey completed yet';
-                console.log('⚠️ No data found for:', airlineName);
-                return;
-            }
-
-            // Update survey period
-            document.getElementById('surveyPeriod').textContent = getSurveyPeriod(airlineData.completionDate);
-
-            console.log('✅ Data loaded for:', airlineName);
-            console.log('📊 Sessions completed:', airlineData.sessionsCompleted);
-            console.log('📅 Completion date:', airlineData.completionDate);
-
-            renderAll();
-        });
-
-        // ============================================================
-        // RENDER FUNCTIONS
-        // ============================================================
-        function renderAll() {
-            renderStats();
-            renderPillarSummary();
-            renderPillarChart();
-            renderGapAnalysis();
-            renderCAP();
-            renderCharts();
-        }
-
-        function renderStats() {
-            document.getElementById('totalSessions').textContent = airlineData.totalSessions || 0;
-            document.getElementById('completedSessions').textContent = airlineData.sessionsCompleted || 0;
-            document.getElementById('avgScore').textContent = (airlineData.overallAverage || 0).toFixed(1);
-            document.getElementById('criticalGaps').textContent = airlineData.criticalGaps || 0;
-        }
-
-        function renderPillarSummary() {
-            const container = document.getElementById('pillarSummary');
-            container.innerHTML = '';
-
-            const pillarOrder = ['Policy', 'Risk Management', 'Assurance', 'Promotion'];
-            const pillarDescriptions = {
-                'Policy': 'Management commitment, safety accountabilities, and documented safety policies',
-                'Risk Management': 'Hazard identification, risk assessment, and mitigation strategies',
-                'Assurance': 'Performance monitoring, audits, and continuous improvement processes',
-                'Promotion': 'Training, communication, and fostering a positive safety culture'
-            };
-
-            pillarOrder.forEach(pillar => {
-                const score = airlineData.pillarAverages[pillar] || 0;
-                const status = score >= 4.0 ? 'strong' : (score >= 3.0 ? 'moderate' : 'weak');
-                const statusLabel = score >= 4.0 ? 'Strong' : (score >= 3.0 ? 'Moderate' : 'Weak');
-                const statusIcon = score >= 4.0 ? '✅' : (score >= 3.0 ? '⚠️' : '🔴');
-
-                const elements = [];
-                for (let i = 1; i <= 12; i++) {
-                    if (ELEMENT_PILLARS[i] === pillar) {
-                        elements.push(i);
-                    }
-                }
-
-                const card = document.createElement('div');
-                card.className = `pillar-card pillar-${pillar.toLowerCase().replace(' ', '-')}`;
-                card.innerHTML = `
-                    <div class="pillar-header">
-                        <h4><i class="fas ${PILLAR_ICONS[pillar]}"></i> ${pillar}</h4>
-                        <span class="pillar-score ${score >= 4.0 ? 'good' : (score >= 3.0 ? 'average' : 'poor')}">${score.toFixed(1)}</span>
-                    </div>
-                    <div class="pillar-elements">
-                        Elements: ${elements.map(e => `<span>${e}</span>`).join('')}
-                    </div>
-                    <div class="pillar-elements" style="font-size:0.75rem;margin-top:4px;color:#6c757d;">
-                        ${pillarDescriptions[pillar]}
-                    </div>
-                    <div class="pillar-status ${status}">
-                        ${statusIcon} ${statusLabel} - ${score >= 4.0 ? 'No immediate action needed' : (score >= 3.0 ? 'Some improvement needed' : 'Immediate attention required')}
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function renderPillarChart() {
-            const ctx = document.getElementById('pillarChart').getContext('2d');
-            const pillarOrder = ['Policy', 'Risk Management', 'Assurance', 'Promotion'];
-            const colors = ['#2e7daf', '#e8a838', '#28a745', '#dc3545'];
-            const scores = pillarOrder.map(p => airlineData.pillarAverages[p] || 0);
-
-            if (pillarChart) {
-                pillarChart.destroy();
-            }
-
-            pillarChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: pillarOrder,
-                    datasets: [{
-                        data: scores,
-                        backgroundColor: colors,
-                        borderColor: ['#ffffff', '#ffffff', '#ffffff', '#ffffff'],
-                        borderWidth: 3,
-                        hoverOffset: 15
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed || 0;
-                                    return `${label}: ${value.toFixed(1)} / 5.0`;
-                                }
-                            }
-                        }
-                    },
-                    cutout: '68%'
-                }
-            });
-
-            // Render legend
-            const container = document.getElementById('pillarLegend');
-            container.innerHTML = '';
-            pillarOrder.forEach((label, index) => {
-                const item = document.createElement('div');
-                item.className = 'legend-item';
-                item.innerHTML = `
-                    <span class="color-box" style="background:${colors[index]};"></span>
-                    <span>${label}</span>
-                    <span class="score">${scores[index].toFixed(1)}</span>
-                `;
-                container.appendChild(item);
-            });
-        }
-
-        function renderGapAnalysis() {
-            const container = document.getElementById('gapGrid');
-            container.innerHTML = '';
-
-            if (!airlineData.gaps) {
-                container.innerHTML =
-                    `<div style="text-align:center;padding:30px;color:#6c757d;grid-column:1/-1;">No gap data available.</div>`;
-                return;
-            }
-
-            const sortedGaps = Object.keys(airlineData.gaps).sort((a, b) => airlineData.gaps[b].gap - airlineData.gaps[a].gap);
-
-            sortedGaps.forEach(key => {
-                const gap = airlineData.gaps[key];
-                const severityClass = gap.severity.includes('Critical') ? 'critical' :
-                    gap.severity.includes('Moderate') ? 'moderate' :
-                    gap.severity.includes('Minor') ? 'minor' : 'compliant';
-
-                const item = document.createElement('div');
-                item.className = `gap-item ${severityClass}`;
-
-                const gapValue = gap.gap.toFixed(1);
-                const gapClass = gap.gap <= 0 ? 'positive' : (gap.gap <= 0.5 ? 'neutral' : 'negative');
-                const gapDisplay = gap.gap <= 0 ? '+' + Math.abs(gap.gap).toFixed(1) : '-' + gap.gap.toFixed(1);
-
-                item.innerHTML = `
-                    <div class="element-name">
-                        <span style="font-weight:700;color:#0a2e4a;">Element ${key}</span>
-                        <span style="font-weight:400;color:#6c757d;font-size:0.85rem;display:block;">${gap.name}</span>
-                        <span class="pillar-tag">${gap.pillar}</span>
-                    </div>
-                    <div class="score">
-                        <span class="current">${gap.current.toFixed(1)}</span>
-                        <span class="target">/ 5.0</span>
-                        <span class="gap-value ${gapClass}">${gapDisplay}</span>
-                    </div>
-                `;
-
-                container.appendChild(item);
-            });
-        }
-
-        function renderCAP() {
-            const container = document.getElementById('capGrid');
-            container.innerHTML = '';
-
-            if (!airlineData.gaps) {
-                container.innerHTML =
-                    `<div style="grid-column:1/-1;text-align:center;padding:30px;color:#6c757d;">No corrective actions needed.</div>`;
-                return;
-            }
-
-            const pillarGroups = {};
-            for (const key in airlineData.gaps) {
-                const gap = airlineData.gaps[key];
-                if (gap.gap > 0.3) {
-                    if (!pillarGroups[gap.pillar]) pillarGroups[gap.pillar] = [];
-                    pillarGroups[gap.pillar].push({ key, gap });
-                }
-            }
-
-            if (Object.keys(pillarGroups).length === 0) {
-                container.innerHTML =
-                    `<div style="grid-column:1/-1;text-align:center;padding:30px;color:#28a745;">
-                        <i class="fas fa-check-circle" style="font-size:2rem;display:block;margin-bottom:10px;"></i>
-                        <h4 style="color:#28a745;">Excellent! No corrective actions needed.</h4>
-                    </div>`;
-                return;
-            }
-
-            const actionTemplates = {
-                'Policy': [
-                    'Review and update safety policy documents to align with ICAO Annex 19 requirements.',
-                    'Establish clear safety accountabilities and responsibilities at all organizational levels.',
-                    'Conduct management safety briefings to reinforce commitment to safety.'
-                ],
-                'Risk Management': [
-                    'Implement a formal hazard identification and risk assessment process.',
-                    'Develop risk mitigation strategies with clear timelines and responsibilities.',
-                    'Conduct regular risk assessment training for all relevant personnel.'
-                ],
-                'Assurance': [
-                    'Establish safety performance indicators (SPIs) to monitor safety performance.',
-                    'Implement a regular internal safety audit program.',
-                    'Develop a management of change process for operational changes.'
-                ],
-                'Promotion': [
-                    'Develop and implement a comprehensive safety training program.',
-                    'Establish effective safety communication channels across the organization.',
-                    'Foster a positive safety culture through leadership engagement.'
-                ]
-            };
-
-            const severityOrder = { 'Critical Gap': 0, 'Moderate Gap': 1, 'Minor Gap': 2 };
-
-            for (const pillar in pillarGroups) {
-                pillarGroups[pillar].sort((a, b) => {
-                    return severityOrder[a.gap.severity] - severityOrder[b.gap.severity];
-                });
-
-                const topGap = pillarGroups[pillar][0];
-                const priorityClass = topGap.gap.severity.includes('Critical') ? 'high' :
-                    topGap.gap.severity.includes('Moderate') ? 'medium' : 'low';
-                const priorityLabel = topGap.gap.severity.includes('Critical') ? 'HIGH' :
-                    topGap.gap.severity.includes('Moderate') ? 'MEDIUM' : 'LOW';
-
-                const actions = actionTemplates[pillar] || ['Review and improve safety management practices.'];
-
-                const card = document.createElement('div');
-                card.className = `cap-item priority-${priorityClass}`;
-                card.innerHTML = `
-                    <div class="cap-header">
-                        <span class="cap-pillar"><i class="fas ${PILLAR_ICONS[pillar]}"></i> ${pillar}</span>
-                        <span class="cap-priority ${priorityClass}">${priorityLabel} PRIORITY</span>
-                    </div>
-                    <div class="cap-title">${pillar} Improvement Plan</div>
-                    <div class="cap-current">
-                        Current score: ${topGap.gap.current.toFixed(1)}/5.0 | Gap: ${topGap.gap.gap.toFixed(1)} points
-                        ${pillarGroups[pillar].length > 1 ? `| ${pillarGroups[pillar].length} elements affected` : ''}
-                    </div>
-                    <div class="cap-action">
-                        <i class="fas fa-check-circle"></i>
-                        <strong>Recommended Actions:</strong>
-                        <ul style="margin-top:5px;padding-left:20px;font-size:0.85rem;color:#495057;">
-                            ${actions.slice(0, 3).map(a => `<li>${a}</li>`).join('')}
-                        </ul>
-                    </div>
-                `;
-                container.appendChild(card);
-            }
-        }
-
-        function renderCharts() {
-            // Element Chart
-            const ctx1 = document.getElementById('elementChart').getContext('2d');
-            let labels = [],
-                scores = [],
-                colors = [];
-
-            if (airlineData.elementAverages) {
-                const sortedKeys = Object.keys(airlineData.elementAverages).sort((a, b) => parseInt(a) - parseInt(b));
-                labels = sortedKeys.map(key => `E${key}`);
-                scores = sortedKeys.map(key => airlineData.elementAverages[key]);
-                colors = scores.map(score => {
-                    if (score >= 4.0) return '#28a745';
-                    if (score >= 3.0) return '#ffc107';
-                    if (score >= 2.0) return '#fd7e14';
-                    return '#dc3545';
-                });
-            } else {
-                labels = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'E10', 'E11', 'E12'];
-                scores = new Array(12).fill(0);
-                colors = new Array(12).fill('#dee2e6');
-            }
-
-            if (elementChart) elementChart.destroy();
-
-            elementChart = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Score (out of 5)',
-                        data: scores,
-                        backgroundColor: colors,
-                        borderColor: colors.map(c => c),
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        maxBarThickness: 35
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `Score: ${context.parsed.y.toFixed(1)} / 5.0`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: { min: 0, max: 5, ticks: { stepSize: 1 }, title: { display: true, text: 'Score' } }
-                    }
-                }
-            });
-
-            // Gap Chart
-            const ctx2 = document.getElementById('gapChart').getContext('2d');
-            let gapLabels = [],
-                gapData = [],
-                gapColors = [];
-
-            if (airlineData.gaps) {
-                const sortedGaps = Object.keys(airlineData.gaps).sort((a, b) => airlineData.gaps[b].gap - airlineData.gaps[a].gap);
-                gapLabels = sortedGaps.map(key => `E${key}`);
-                gapData = sortedGaps.map(key => airlineData.gaps[key].gap);
-                gapColors = gapData.map(gap => {
-                    if (gap <= 0) return '#28a745';
-                    if (gap <= 0.5) return '#ffc107';
-                    if (gap <= 1.0) return '#fd7e14';
-                    return '#dc3545';
-                });
-            } else {
-                gapLabels = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'E10', 'E11', 'E12'];
-                gapData = new Array(12).fill(0);
-                gapColors = new Array(12).fill('#dee2e6');
-            }
-
-            if (gapChart) gapChart.destroy();
-
-            gapChart = new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: gapLabels,
-                    datasets: [{
-                        label: 'Gap to Target (4.5)',
-                        data: gapData,
-                        backgroundColor: gapColors,
-                        borderColor: gapColors.map(c => c),
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        maxBarThickness: 35
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const gap = context.parsed.y;
-                                    if (gap <= 0) return `✅ Compliant (${Math.abs(gap).toFixed(1)} above target)`;
-                                    return `⚠️ Gap: ${gap.toFixed(1)} points`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: { min: 0, max: 2.5, ticks: { stepSize: 0.5 }, title: { display: true, text: 'Gap Size' } }
-                    }
-                }
-            });
-        }
-
-        // ============================================================
-        // EXPORT FUNCTIONS
-        // ============================================================
-        function exportPDF() {
-            const element = document.getElementById('dashboardContainer');
-            const btn = document.querySelector('.btn-export.pdf');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-            btn.disabled = true;
-
-            const opt = {
-                margin: [10, 10, 10, 10],
-                filename: `Safety_Report_${airlineName}_${new Date().toISOString().split('T')[0]}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            html2pdf().set(opt).from(element).save().then(function() {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                console.log('✅ PDF exported');
-            }).catch(function(err) {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                alert('PDF export failed. Please use Print > Save as PDF.');
-            });
-        }
-
-        function exportExcel() {
-            if (!airlineData) {
-                alert('No data to export.');
-                return;
-            }
-
-            let csv = `Safety Report - ${airlineName}\n`;
-            csv += `Generated: ${new Date().toLocaleString()}\n`;
-            csv += `Survey Period: ${document.getElementById('surveyPeriod').textContent}\n\n`;
-            csv += 'PILLAR SUMMARY\n';
-            csv += 'Pillar,Average Score,Status\n';
-            for (const pillar in airlineData.pillarAverages) {
-                const score = airlineData.pillarAverages[pillar] || 0;
-                const status = score >= 4.0 ? 'Strong' : (score >= 3.0 ? 'Moderate' : 'Weak');
-                csv += `${pillar},${score.toFixed(1)},${status}\n`;
-            }
-            csv += '\nELEMENT DETAILS\n';
-            csv += 'Element,Name,Pillar,Current Score,Target Score,Gap,Severity\n';
-            for (const key in airlineData.gaps) {
-                const gap = airlineData.gaps[key];
-                csv +=
-                    `Element ${key},${gap.name},${gap.pillar},${gap.current.toFixed(1)},4.5,${gap.gap.toFixed(1)},${gap.severity}\n`;
-            }
-            csv += '\nSUMMARY\n';
-            csv += `Total Sessions,${airlineData.totalSessions}\n`;
-            csv += `Completed Sessions,${airlineData.sessionsCompleted}\n`;
-            csv += `Overall Average,${airlineData.overallAverage.toFixed(1)}\n`;
-            csv += `Critical Gaps,${airlineData.criticalGaps}\n`;
-
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Safety_Report_${airlineName}_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-            alert('✅ Excel export complete!');
-        }
-
-        // ============================================================
-        // LOGOUT
-        // ============================================================
-        function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                localStorage.removeItem('sms_user_data');
-                localStorage.removeItem('sms_token');
-                window.location.href = 'index.html';
-            }
-        }
-
-        // ============================================================
-        // EXPOSE FOR TESTING
-        // ============================================================
-        window.__safetyDashboard = {
-            airlineData,
-            tenantId,
-            airlineName,
-            exportPDF,
-            exportExcel,
-            logout,
-            getSurveyPeriod
-        };
-
-        console.log('🛡️ Safety Officer Dashboard ready');
-        console.log(`✈️ Airline: ${airlineName}`);
-        console.log(`📊 Data loaded: ${airlineData ? 'Yes' : 'No'}`);
-        console.log(`📅 Survey Period: ${document.getElementById('surveyPeriod').textContent}`);
-    </script>
+    <!-- Page-Specific Script -->
+    <script src="js/safety-dashboard.js"></script>
 
 </body>
 </html>

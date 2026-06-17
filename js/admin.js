@@ -1,10 +1,10 @@
 /*
 ================================================================================
 FILE: SurveySMS/js/admin.js
-VERSION: 1.1.0
+VERSION: 1.2.0
 REVISION DATE: 2026-06-17
-PURPOSE: Admin panel logic - authentication, data management, language support
-DEPENDENCIES: credentials.js, translations.js
+PURPOSE: Admin panel logic - authentication, data management, airline-specific dummy data
+DEPENDENCIES: credentials.js, translations.js, auth.js, storage.js
 USAGE: admin.html
 AUTHOR: Ghanshyam Acharya
 CODE OWNER: aviasafetysystems.com
@@ -14,7 +14,6 @@ CODE OWNER: aviasafetysystems.com
 // ============================================================
 // STATE
 // ============================================================
-let isLoggedIn = false;
 let currentLang = 'en';
 let ADMIN_EMAIL = 'admin@surveysms.com';
 
@@ -30,17 +29,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get airlines from credentials module
     renderAirlines();
 
+    // Populate airline selector
+    populateAirlineSelector();
+
     // Update language
     updateLanguageToggle();
     updateTranslations();
 
-    // Check if already logged in using credentials module
-    const userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
-    if (userData.email === ADMIN_EMAIL) {
-        isLoggedIn = true;
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('adminPanel').classList.add('show');
-        console.log('✅ Admin already logged in');
+    // Check if already logged in using auth module
+    if (typeof isLoggedIn === 'function') {
+        if (isLoggedIn()) {
+            const userData = getCurrentUser();
+            if (userData && userData.role === 'admin') {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminPanel').classList.add('show');
+                console.log('✅ Admin already logged in');
+            }
+        }
+    } else {
+        // Fallback to localStorage check
+        const userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
+        if (userData.email === ADMIN_EMAIL) {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('adminPanel').classList.add('show');
+            console.log('✅ Admin already logged in');
+        }
     }
 
     console.log('💡 Admin panel ready in:', currentLang);
@@ -84,9 +97,9 @@ function updateTranslations() {
     document.getElementById('actionWipeDesc').textContent = t('wipe_desc') || 'Completely remove all survey responses, sessions, and user data from localStorage.';
     document.getElementById('actionWipeBtn').textContent = t('wipe_btn') || 'Wipe All Data';
 
-    document.getElementById('actionGenerateTitle').textContent = t('generate_title') || 'Generate Dummy Survey Responses';
-    document.getElementById('actionGenerateDesc').textContent = t('generate_desc') || 'Generate realistic survey responses for multiple airlines with random scores.';
-    document.getElementById('actionGenerateBtn').textContent = t('generate_btn') || 'Generate Dummy Data';
+    document.getElementById('actionGenerateTitle').textContent = t('generate_title') || 'Generate All Dummy Data';
+    document.getElementById('actionGenerateDesc').textContent = t('generate_desc') || 'Generate realistic survey responses for ALL airlines with random scores.';
+    document.getElementById('actionGenerateBtn').textContent = t('generate_btn') || 'Generate All';
 
     document.getElementById('actionStatsTitle').textContent = t('stats_title') || 'Data Statistics';
     document.getElementById('actionStatsDesc').textContent = t('stats_desc') || 'View current data statistics including total sessions and airlines.';
@@ -97,7 +110,7 @@ function updateTranslations() {
     document.getElementById('actionResetBtn').textContent = t('reset_btn') || 'Reset Demo User';
 
     // Airlines section
-    document.getElementById('airlinesTitle').textContent = t('available_airlines') || 'Available Airlines';
+    document.getElementById('airlinesTitle').textContent = t('available_airlines') || 'SAAS Provided To:';
 
     // Footer
     document.getElementById('footerText').textContent = t('admin_footer') || 'SurveySMS Admin Panel';
@@ -111,7 +124,7 @@ function updateTranslations() {
 }
 
 // ============================================================
-// LOGIN (UPDATED)
+// LOGIN
 // ============================================================
 function handleLogin(event) {
     event.preventDefault();
@@ -126,26 +139,42 @@ function handleLogin(event) {
         const user = validateCredentials(email, password);
         
         if (user && user.role === 'admin') {
-            isLoggedIn = true;
-            document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('adminPanel').classList.add('show');
-            errorEl.classList.remove('show');
-            console.log('✅ Admin login successful');
-            showStatus('success', t('login_success') || '✅ Login successful! Welcome to the Admin Panel.');
-            renderAirlines();
-            return false;
-        }
-    } else {
-        // Fallback to hardcoded password if credentials module not loaded
-        console.warn('⚠️ Credentials module not loaded, using fallback');
-        if (password === 'survey2026') {
-            isLoggedIn = true;
-            document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('adminPanel').classList.add('show');
-            errorEl.classList.remove('show');
-            console.log('✅ Admin login successful (fallback)');
-            showStatus('success', t('login_success') || '✅ Login successful! Welcome to the Admin Panel.');
-            renderAirlines();
+            // Use auth module to set session
+            if (typeof login === 'function') {
+                login(email, password).then(result => {
+                    if (result.success) {
+                        document.getElementById('loginSection').style.display = 'none';
+                        document.getElementById('adminPanel').classList.add('show');
+                        errorEl.classList.remove('show');
+                        console.log('✅ Admin login successful');
+                        showStatus('success', t('login_success') || '✅ Login successful! Welcome to the Admin Panel.');
+                        renderAirlines();
+                        populateAirlineSelector();
+                    }
+                });
+            } else {
+                // Fallback
+                const userData = {
+                    email: email,
+                    name: user.displayName,
+                    role: user.role,
+                    airline: user.airline,
+                    tenantId: user.tenantId,
+                    language: currentLang,
+                    picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.airline)}&background=0a2e4a&color=fff&size=128`,
+                    lastLogin: new Date().toISOString()
+                };
+                localStorage.setItem('sms_user_data', JSON.stringify(userData));
+                localStorage.setItem('sms_token', 'admin_token_' + Date.now());
+                
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminPanel').classList.add('show');
+                errorEl.classList.remove('show');
+                console.log('✅ Admin login successful');
+                showStatus('success', t('login_success') || '✅ Login successful! Welcome to the Admin Panel.');
+                renderAirlines();
+                populateAirlineSelector();
+            }
             return false;
         }
     }
@@ -158,14 +187,18 @@ function handleLogin(event) {
 }
 
 // ============================================================
-// RENDER AIRLINES (UPDATED)
+// RENDER AIRLINES
 // ============================================================
 function renderAirlines() {
     const container = document.getElementById('airlinesList');
+    const title = document.getElementById('airlinesTitle');
     
-    // Use getAirlines function from credentials module if available
     if (typeof getAirlines === 'function') {
         const airlines = getAirlines();
+        const count = airlines.length;
+        title.textContent = `SAAS Provided To: (${count})`;
+        document.getElementById('tenantCount').textContent = `(${count})`;
+        
         container.innerHTML = airlines.map(airline =>
             `<span class="airline-tag">
                 <i class="fas fa-plane"></i> ${airline.name}
@@ -175,15 +208,239 @@ function renderAirlines() {
         ).join('');
         console.log(`✅ Rendered ${airlines.length} airlines from credentials`);
     } else {
-        // Fallback to hardcoded airlines
-        const AIRLINES = [
+        // Fallback
+        const airlines = [
             'Sita Air', 'Tara Air', 'Summit Air', 'Buddha Air',
             'Yeti Airlines', 'Shree Airlines', 'Danfe Air'
         ];
-        container.innerHTML = AIRLINES.map(airline =>
+        title.textContent = `SAAS Provided To: (${airlines.length})`;
+        document.getElementById('tenantCount').textContent = `(${airlines.length})`;
+        container.innerHTML = airlines.map(airline =>
             `<span class="airline-tag"><i class="fas fa-plane"></i> ${airline}</span>`
         ).join('');
         console.warn('⚠️ Credentials module not loaded, using hardcoded airlines');
+    }
+}
+
+// ============================================================
+// AIRLINE SELECTOR
+// ============================================================
+function populateAirlineSelector() {
+    const select = document.getElementById('airlineSelector');
+    if (!select) return;
+
+    // Clear existing options except "All"
+    while (select.options.length > 0) {
+        select.remove(0);
+    }
+
+    // Add "All Airlines" option
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = '✈️ All Airlines';
+    select.appendChild(allOption);
+
+    // Get airlines from credentials
+    let airlines = [];
+    if (typeof getAirlines === 'function') {
+        airlines = getAirlines();
+    } else {
+        airlines = [
+            { name: 'Sita Air', tenantId: 'sita-air' },
+            { name: 'Tara Air', tenantId: 'tara-air' },
+            { name: 'Summit Air', tenantId: 'summit-air' },
+            { name: 'Buddha Air', tenantId: 'buddha-air' },
+            { name: 'Yeti Airlines', tenantId: 'yeti-airlines' },
+            { name: 'Shree Airlines', tenantId: 'shree-airlines' },
+            { name: 'Danfe Air', tenantId: 'danfe-air' }
+        ];
+    }
+
+    // Add each airline
+    airlines.forEach(airline => {
+        const option = document.createElement('option');
+        option.value = airline.tenantId || airline.name.toLowerCase().replace(/ /g, '-');
+        option.textContent = `✈️ ${airline.name}`;
+        select.appendChild(option);
+    });
+
+    // Add CAAN
+    const caanOption = document.createElement('option');
+    caanOption.value = 'caan';
+    caanOption.textContent = '🏛️ CAAN';
+    select.appendChild(caanOption);
+
+    console.log(`✅ Populated airline selector with ${airlines.length + 2} options`);
+}
+
+// ============================================================
+// GENERATE DUMMY DATA FOR SPECIFIC AIRLINE
+// ============================================================
+function generateDummyDataForAirline() {
+    const select = document.getElementById('airlineSelector');
+    const tenantId = select.value;
+    const t = (key) => getTranslation(key, currentLang);
+
+    // Get airline name for display
+    let airlineName = 'All Airlines';
+    if (tenantId !== 'all') {
+        const option = select.options[select.selectedIndex];
+        airlineName = option.textContent.replace('✈️ ', '').replace('🏛️ ', '');
+    }
+
+    if (!confirm(`This will generate dummy survey responses for:\n\n📊 ${airlineName}\n\nExisting data will be preserved.\n\nContinue?`)) {
+        return;
+    }
+
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner"></span> Generating...`;
+    btn.disabled = true;
+
+    setTimeout(() => {
+        try {
+            let results;
+            if (tenantId === 'all') {
+                results = generateDummyResponses();
+            } else {
+                results = generateDummyResponsesForTenant(tenantId);
+            }
+
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+
+            showStatus('success', `
+                <i class="fas fa-check-circle"></i>
+                <strong>✅ Dummy data generated successfully!</strong><br>
+                ${results.summary}
+            `);
+
+            console.log('✅ Dummy data generated:', results);
+            
+            // Refresh stats and airlines list
+            renderAirlines();
+        } catch (error) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            console.error('❌ Error generating dummy data:', error);
+            showStatus('error', t('generate_error') || '❌ Error generating dummy data: ' + error.message);
+        }
+    }, 200);
+}
+
+function generateDummyResponsesForTenant(tenantId) {
+    const results = {
+        airlines: [],
+        totalSessions: 0,
+        summary: ''
+    };
+
+    // Find airline name from tenantId
+    let airlineName = tenantId;
+    let airlines = [];
+    if (typeof getAirlines === 'function') {
+        airlines = getAirlines();
+        const found = airlines.find(a => a.tenantId === tenantId);
+        if (found) airlineName = found.name;
+    } else {
+        const map = {
+            'sita-air': 'Sita Air',
+            'tara-air': 'Tara Air',
+            'summit-air': 'Summit Air',
+            'buddha-air': 'Buddha Air',
+            'yeti-airlines': 'Yeti Airlines',
+            'shree-airlines': 'Shree Airlines',
+            'danfe-air': 'Danfe Air'
+        };
+        airlineName = map[tenantId] || tenantId;
+    }
+
+    // Generate 5 sessions with realistic scores
+    const sessions = generateSessionsForAirline(airlineName, tenantId, 1);
+    results.airlines.push({
+        name: airlineName,
+        tenantId: tenantId,
+        sessions: sessions
+    });
+    results.totalSessions += sessions;
+
+    results.summary = `
+        Generated data for <strong>${airlineName}</strong><br>
+        Total sessions created: <strong>${sessions}</strong><br>
+        All 5 sessions complete (${sessions} total)
+    `;
+
+    return results;
+}
+
+// ============================================================
+// WIPE DATA FOR SPECIFIC AIRLINE
+// ============================================================
+function wipeDataForAirline() {
+    const select = document.getElementById('airlineSelector');
+    const tenantId = select.value;
+    const t = (key) => getTranslation(key, currentLang);
+
+    // Get airline name for display
+    let airlineName = 'All Airlines';
+    let isAll = tenantId === 'all';
+    if (!isAll) {
+        const option = select.options[select.selectedIndex];
+        airlineName = option.textContent.replace('✈️ ', '').replace('🏛️ ', '');
+    }
+
+    const confirmMsg = isAll
+        ? '⚠️ WARNING: This will permanently delete ALL survey data for ALL airlines!\n\nAre you sure you want to continue?'
+        : `⚠️ WARNING: This will permanently delete ALL survey data for:\n\n📊 ${airlineName}\n\nAre you sure you want to continue?`;
+
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+
+    if (!confirm('🔴 LAST CHANCE: All data will be lost forever. Continue?')) {
+        return;
+    }
+
+    try {
+        let count = 0;
+        const keys = Object.keys(localStorage);
+
+        keys.forEach(key => {
+            let shouldDelete = false;
+
+            if (isAll) {
+                // Delete all sms_ keys
+                if (key.startsWith('sms_')) {
+                    shouldDelete = true;
+                }
+            } else {
+                // Delete only keys for specific tenant
+                if (key.startsWith(`sms_${tenantId}_`)) {
+                    shouldDelete = true;
+                }
+                // Also delete session keys that match
+                if (key.includes(`session_`) && key.includes(tenantId)) {
+                    shouldDelete = true;
+                }
+            }
+
+            if (shouldDelete) {
+                localStorage.removeItem(key);
+                count++;
+            }
+        });
+
+        console.log(`✅ Wiped ${count} items from localStorage for: ${airlineName}`);
+        showStatus('success', `
+            <i class="fas fa-check-circle"></i>
+            <strong>✅ Successfully wiped ${count} data items for ${airlineName}!</strong>
+        `);
+
+        // Refresh stats and airlines list
+        renderAirlines();
+    } catch (error) {
+        console.error('❌ Error wiping data:', error);
+        showStatus('error', '❌ Error wiping data: ' + error.message);
     }
 }
 
@@ -236,6 +493,9 @@ function wipeData() {
 
         console.log(`✅ Wiped ${count} items from localStorage`);
         showStatus('success', t('wipe_success').replace('{count}', count));
+        
+        // Refresh airlines list
+        renderAirlines();
     } catch (error) {
         console.error('❌ Error wiping data:', error);
         showStatus('error', t('wipe_error') || '❌ Error wiping data: ' + error.message);
@@ -243,7 +503,7 @@ function wipeData() {
 }
 
 // ============================================================
-// GENERATE DUMMY DATA (UPDATED)
+// GENERATE ALL DUMMY DATA
 // ============================================================
 function generateDummyData() {
     const t = (key) => getTranslation(key, currentLang);
@@ -270,6 +530,9 @@ function generateDummyData() {
             `);
 
             console.log('✅ Dummy data generated:', results);
+            
+            // Refresh airlines list
+            renderAirlines();
         } catch (error) {
             btn.innerHTML = originalText;
             btn.disabled = false;
@@ -286,7 +549,6 @@ function generateDummyResponses() {
         summary: ''
     };
 
-    // Get airlines from credentials module or use defaults
     let airlines;
     if (typeof getAirlines === 'function') {
         airlines = getAirlines().map(a => a.name);
@@ -352,7 +614,6 @@ function generateSessionsForAirline(airline, tenantId, seed) {
     };
     localStorage.setItem(`sms_${tenantId}_airline_data`, JSON.stringify(airlineData));
 
-    // Get email from credentials if available
     let email = `demo@${tenantId}.com`;
     if (typeof window !== 'undefined' && window.CREDENTIALS) {
         for (const [e, u] of Object.entries(window.CREDENTIALS)) {
@@ -433,7 +694,6 @@ function getDataStats() {
     let totalKeys = 0;
     let totalSize = 0;
 
-    // Get airlines from credentials
     let airlineNames;
     if (typeof getAirlines === 'function') {
         airlineNames = getAirlines().map(a => a.name);
@@ -524,13 +784,18 @@ function resetDemoUser() {
 // KEYBOARD SHORTCUTS
 // ============================================================
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !isLoggedIn) {
+    if (e.key === 'Enter' && document.getElementById('loginSection').style.display !== 'none') {
         document.getElementById('loginForm').dispatchEvent(new Event('submit'));
     }
-    if (e.key === 'Escape' && isLoggedIn) {
+    if (e.key === 'Escape' && document.getElementById('adminPanel').classList.contains('show')) {
         const t = (key) => getTranslation(key, currentLang);
         if (confirm(t('logout_confirm') || 'Logout from admin panel?')) {
-            isLoggedIn = false;
+            if (typeof logout === 'function') {
+                logout(false);
+            } else {
+                localStorage.removeItem('sms_user_data');
+                localStorage.removeItem('sms_token');
+            }
             document.getElementById('adminPanel').classList.remove('show');
             document.getElementById('loginSection').style.display = 'block';
             document.getElementById('adminPassword').value = '';
@@ -546,10 +811,13 @@ window.__admin = {
     currentLang,
     wipeData,
     generateDummyData,
+    generateDummyDataForAirline,
+    wipeDataForAirline,
     showStats,
     resetDemoUser,
     toggleLanguage,
-    renderAirlines
+    renderAirlines,
+    populateAirlineSelector
 };
 
 console.log('🔐 Admin Panel ready with centralized credential management');

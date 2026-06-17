@@ -76,9 +76,25 @@ CODE OWNER: aviasafetysystems.com
                 <!-- Status Messages -->
                 <div class="status-msg" id="statusMsg"></div>
 
-                <!-- Actions -->
+                <!-- ===== AIRLINE SELECTOR FOR DUMMY DATA ===== -->
+                <div class="airline-selector-section">
+                    <h4><i class="fas fa-filter"></i> Select Airline for Data Management</h4>
+                    <div class="airline-selector-grid">
+                        <select id="airlineSelector" class="airline-select">
+                            <option value="all">✈️ All Airlines</option>
+                        </select>
+                        <button class="btn btn-success" onclick="generateDummyDataForAirline()">
+                            <i class="fas fa-play"></i> Generate for Selected
+                        </button>
+                        <button class="btn btn-danger" onclick="wipeDataForAirline()">
+                            <i class="fas fa-trash"></i> Wipe Selected
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ===== ACTIONS ===== -->
                 <div class="admin-actions">
-                    <!-- Wipe Data -->
+                    <!-- Wipe All Data -->
                     <div class="action-card">
                         <div class="icon danger"><i class="fas fa-trash-alt"></i></div>
                         <h3 id="actionWipeTitle">Wipe All Survey Data</h3>
@@ -88,13 +104,13 @@ CODE OWNER: aviasafetysystems.com
                         </button>
                     </div>
 
-                    <!-- Generate Dummy Data -->
+                    <!-- Generate All Dummy Data -->
                     <div class="action-card">
                         <div class="icon success"><i class="fas fa-database"></i></div>
-                        <h3 id="actionGenerateTitle">Generate Dummy Survey Responses</h3>
-                        <p id="actionGenerateDesc">Generate realistic survey responses for multiple airlines with random scores.</p>
+                        <h3 id="actionGenerateTitle">Generate All Dummy Data</h3>
+                        <p id="actionGenerateDesc">Generate realistic survey responses for ALL airlines with random scores.</p>
                         <button class="btn btn-success" onclick="generateDummyData()" id="actionGenerateBtn">
-                            <i class="fas fa-play"></i> Generate Dummy Data
+                            <i class="fas fa-play"></i> Generate All
                         </button>
                     </div>
 
@@ -119,15 +135,15 @@ CODE OWNER: aviasafetysystems.com
                     </div>
                 </div>
 
-                <!-- Airlines List -->
+                <!-- ===== AIRLINES LIST ===== -->
                 <div class="airlines-section">
-                    <h4><i class="fas fa-plane"></i> <span id="airlinesTitle">Available Airlines</span></h4>
+                    <h4><i class="fas fa-users"></i> <span id="airlinesTitle">SAAS Provided To: <span id="tenantCount">(0)</span></span></h4>
                     <div class="airlines-list" id="airlinesList">
                         <!-- Populated by JavaScript -->
                     </div>
                 </div>
 
-                <!-- Footer -->
+                <!-- ===== FOOTER ===== -->
                 <div class="admin-footer">
                     <i class="fas fa-shield-alt" style="color: var(--secondary);"></i>
                     <span id="footerText">SurveySMS Admin Panel</span> &bull;
