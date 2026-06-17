@@ -1,559 +1,719 @@
 /*
 ================================================================================
-FILE: SurveySMS/js/survey.js
-VERSION: 3.0
+FILE: SurveySMS/js/safety-dashboard.js
+VERSION: 1.0.0
 REVISION DATE: 2026-06-17
-PURPOSE: Survey page logic - handles questions, answers, navigation, language
-REVISED PURPOSE: Fixed AIRLINE_PURPOSES access, starts at Question 1, fixed page title
-AFFECTED: survey/survey.html
+PURPOSE: Safety Officer Dashboard - Analytics view with 4 pillars, pie chart, and gap analysis
+DEPENDENCIES: utils.js, storage.js, auth.js, translations.js
+USAGE: safety-dashboard.html
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
 ================================================================================
 */
 
 // ============================================================
 // CONFIGURATION
 // ============================================================
-const QUESTIONS_PER_SESSION = 24;
-const TOTAL_ELEMENTS = 12;
-const QUESTIONS_PER_ELEMENT = 2;
+const ELEMENT_NAMES = {
+    1: 'Safety Policy & Objectives',
+    2: 'Safety Accountabilities',
+    3: 'Hazard Identification',
+    4: 'Risk Assessment & Mitigation',
+    5: 'Safety Performance Monitoring',
+    6: 'Internal Safety Audits',
+    7: 'Management of Change',
+    8: 'Continuous Improvement',
+    9: 'Safety Training & Competence',
+    10: 'Safety Communication',
+    11: 'Safety Culture',
+    12: 'Emergency Response Planning'
+};
 
-// ============================================================
-// AIRLINE PURPOSES (Localized)
-// ============================================================
-const AIRLINE_PURPOSES = {
-    'sita-air': {
-        en: 'Sita Air is conducting this survey to assess our safety culture, identify strengths, and develop corrective action plans in alignment with ICAO Annex 19 requirements.',
-        np: 'सीता एयरले ICAO Annex 19 आवश्यकताहरू अनुरूप हाम्रो सुरक्षा संस्कृति मूल्याङ्कन गर्न, बलियो पक्षहरू पहिचान गर्न, र सुधारात्मक कार्य योजनाहरू विकास गर्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
-    },
-    'tara-air': {
-        en: 'Tara Air is conducting this survey to evaluate our safety management system and ensure compliance with international safety standards.',
-        np: 'तारा एयरले हाम्रो सुरक्षा व्यवस्थापन प्रणालीको मूल्याङ्कन गर्न र अन्तर्राष्ट्रिय सुरक्षा मापदण्डहरूको अनुपालन सुनिश्चित गर्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
-    },
-    'summit-air': {
-        en: 'Summit Air is conducting this survey to strengthen our safety culture and operational excellence through employee feedback.',
-        np: 'समिट एयरले कर्मचारी प्रतिक्रिया मार्फत हाम्रो सुरक्षा संस्कृति र परिचालन उत्कृष्टता बलियो बनाउन यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
-    },
-    'buddha-air': {
-        en: 'Buddha Air is conducting this survey to enhance our safety performance and maintain the highest standards of aviation safety.',
-        np: 'बुद्ध एयरले हाम्रो सुरक्षा प्रदर्शन बढाउन र विमानन सुरक्षाको उच्चतम मापदण्डहरू कायम राख्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
-    },
-    'yeti-airlines': {
-        en: 'Yeti Airlines is conducting this survey to assess our safety management practices and drive continuous improvement.',
-        np: 'यती एयरलाइन्सले हाम्रो सुरक्षा व्यवस्थापन अभ्यासहरूको मूल्याङ्कन गर्न र निरन्तर सुधारलाई अगाडि बढाउन यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
-    },
-    'shree-airlines': {
-        en: 'Shree Airlines is conducting this survey to evaluate our safety culture and risk management processes.',
-        np: 'श्री एयरलाइन्सले हाम्रो सुरक्षा संस्कृति र जोखिम व्यवस्थापन प्रक्रियाहरूको मूल्याङ्कन गर्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
-    },
-    'danfe-air': {
-        en: 'Danfe Air is conducting this survey to assess our safety management system and commitment to aviation safety excellence.',
-        np: 'दान्फे एयरले हाम्रो सुरक्षा व्यवस्थापन प्रणाली र विमानन सुरक्षा उत्कृष्टताप्रतिको प्रतिबद्धताको मूल्याङ्कन गर्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
-    }
+const ELEMENT_PILLARS = {
+    1: 'Policy',
+    2: 'Policy',
+    3: 'Risk Management',
+    4: 'Risk Management',
+    5: 'Assurance',
+    6: 'Assurance',
+    7: 'Assurance',
+    8: 'Assurance',
+    9: 'Promotion',
+    10: 'Promotion',
+    11: 'Promotion',
+    12: 'Assurance'
+};
+
+const PILLAR_ICONS = {
+    'Policy': 'fa-bullseye',
+    'Risk Management': 'fa-chart-line',
+    'Assurance': 'fa-check-circle',
+    'Promotion': 'fa-users'
+};
+
+const PILLAR_COLORS = {
+    'Policy': '#2e7daf',
+    'Risk Management': '#e8a838',
+    'Assurance': '#28a745',
+    'Promotion': '#dc3545'
 };
 
 // ============================================================
 // STATE
 // ============================================================
-let currentQuestion = 0;
-let answers = [];
-let selectedValue = null;
 let tenantId = null;
 let airlineName = null;
+let airlineData = null;
 let userData = null;
-let questions = [];
-let isAnswerSaved = false;
-let currentLang = 'en';
+let elementChart = null;
+let gapChart = null;
+let pillarChart = null;
 
 // ============================================================
-// ELEMENT NAMES
+// GET AIRLINE DATA FROM LOCALSTORAGE
 // ============================================================
-function getElementName(num) {
-    const names = {
-        1: 'Safety Policy & Objectives',
-        2: 'Safety Accountabilities',
-        3: 'Hazard Identification',
-        4: 'Risk Assessment & Mitigation',
-        5: 'Safety Performance Monitoring',
-        6: 'Internal Safety Audits',
-        7: 'Management of Change',
-        8: 'Continuous Improvement',
-        9: 'Safety Training & Competence',
-        10: 'Safety Communication',
-        11: 'Safety Culture',
-        12: 'Emergency Response Planning'
+function getAirlineData(tenantId) {
+    const completed = parseInt(localStorage.getItem(`sms_${tenantId}_completed_sessions`) || '0');
+    if (completed === 0) return null;
+
+    const allAnswers = [];
+    for (let i = 1; i <= 5; i++) {
+        const answers = JSON.parse(localStorage.getItem(`sms_${tenantId}_session_${i}_answers`) || '[]');
+        if (answers.length > 0) {
+            allAnswers.push(...answers);
+        }
+    }
+
+    if (allAnswers.length === 0) return null;
+
+    // Calculate element averages
+    const elementScores = {};
+    const questionsPerElement = 2;
+
+    allAnswers.forEach((answer, index) => {
+        if (answer !== null && answer !== undefined) {
+            const elementIndex = Math.floor(index / questionsPerElement) + 1;
+            if (!elementScores[elementIndex]) elementScores[elementIndex] = [];
+            elementScores[elementIndex].push(answer);
+        }
+    });
+
+    const elementAverages = {};
+    for (const key in elementScores) {
+        const scores = elementScores[key];
+        elementAverages[key] = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100;
+    }
+
+    // Calculate pillar averages
+    const pillarScores = {};
+    for (const pillar of ['Policy', 'Risk Management', 'Assurance', 'Promotion']) {
+        pillarScores[pillar] = { scores: [], elements: [] };
+    }
+
+    for (let i = 1; i <= 12; i++) {
+        const pillar = ELEMENT_PILLARS[i];
+        if (elementAverages[i] !== undefined) {
+            pillarScores[pillar].scores.push(elementAverages[i]);
+            pillarScores[pillar].elements.push(i);
+        }
+    }
+
+    const pillarAverages = {};
+    for (const pillar in pillarScores) {
+        const scores = pillarScores[pillar].scores;
+        pillarAverages[pillar] = scores.length > 0 ?
+            Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100 :
+            0;
+    }
+
+    const allScores = Object.values(elementAverages);
+    const overallAverage = allScores.length > 0 ?
+        Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 100) / 100 :
+        0;
+
+    const targetScore = 4.5;
+    const gaps = {};
+    let criticalCount = 0;
+
+    for (let i = 1; i <= 12; i++) {
+        const current = elementAverages[i] || 0;
+        const gap = Math.round((targetScore - current) * 100) / 100;
+
+        let severity = 'Compliant';
+        if (gap > 0 && gap <= 0.5) severity = 'Minor Gap';
+        else if (gap > 0.5 && gap <= 1.0) severity = 'Moderate Gap';
+        else if (gap > 1.0) { severity = 'Critical Gap';
+            criticalCount++; }
+
+        gaps[i] = {
+            current: current,
+            target: targetScore,
+            gap: gap,
+            severity: severity,
+            name: ELEMENT_NAMES[i],
+            pillar: ELEMENT_PILLARS[i]
+        };
+    }
+
+    const completionDate = localStorage.getItem(`sms_${tenantId}_last_completion_date`) || null;
+
+    return {
+        name: airlineName,
+        tenantId: tenantId,
+        sessionsCompleted: completed,
+        totalSessions: 5,
+        elementAverages: elementAverages,
+        pillarAverages: pillarAverages,
+        overallAverage: overallAverage,
+        criticalGaps: criticalCount,
+        gaps: gaps,
+        totalQuestions: allAnswers.length,
+        completionDate: completionDate
     };
-    return names[num] || `Element ${num}`;
 }
 
 // ============================================================
-// GET LOCALIZED PURPOSE
+// GET SURVEY PERIOD
 // ============================================================
-function getLocalizedPurpose(tenantId, lang) {
-    const purpose = AIRLINE_PURPOSES[tenantId];
-    if (purpose) {
-        return purpose[lang] || purpose['en'];
-    }
-    const defaultPurpose = {
-        en: 'This survey is being conducted to assess our safety management system and compliance with ICAO Annex 19.',
-        np: 'यो सर्वेक्षण हाम्रो सुरक्षा व्यवस्थापन प्रणाली र ICAO Annex 19 को अनुपालनको मूल्याङ्कन गर्न सञ्चालन गरिँदैछ।'
-    };
-    return defaultPurpose[lang] || defaultPurpose['en'];
+function getSurveyPeriod(completionDate) {
+    if (!completionDate) return 'Not available';
+    const date = new Date(completionDate);
+    const start = new Date(date.getFullYear(), date.getMonth(), 1);
+    const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
 }
 
 // ============================================================
 // INITIALIZATION
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('📝 Survey Page Loaded');
+    console.log('🛡️ Safety Officer Dashboard Loaded');
 
-    // Get URL params
-    const urlParams = new URLSearchParams(window.location.search);
-    tenantId = urlParams.get('tenant') || 'default';
-    const sessionParam = parseInt(urlParams.get('session')) || 1;
+    // ============================================================
+    // 🔐 AUTHENTICATION USING AUTH MODULE
+    // ============================================================
+    
+    if (typeof getCurrentUser === 'function') {
+        userData = getCurrentUser();
+    } else {
+        userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
+    }
 
-    // Check authentication
-    userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
-
-    if (!userData.email) {
-        window.location.href = '../login.html';
+    if (!userData || !userData.email) {
+        window.location.href = 'login.html';
         return;
     }
 
-    // Set airline name and language
-    airlineName = userData.airline || userData.displayName || 'Aviation Organization';
-    currentLang = urlParams.get('lang') || userData.language || 'en';
+    // Verify role
+    if (userData.role !== 'safety_officer') {
+        console.warn('⚠️ User is not a safety officer, redirecting...');
+        window.location.href = 'dashboard.html';
+        return;
+    }
 
-    // Update page title
-    document.title = `Safety Management Survey - ${airlineName}`;
-    document.getElementById('surveyTitle').textContent = 'Safety Management Survey';
+    tenantId = userData.tenantId || 'default';
+    airlineName = userData.airline || 'Aviation Organization';
+
+    // Update UI
+    document.getElementById('userAvatar').src = userData.picture || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(airlineName) + '&background=0a2e4a&color=fff&size=128';
+    document.getElementById('userName').textContent = userData.name || airlineName;
+    document.getElementById('userEmail').textContent = userData.email || '';
+    document.getElementById('tenantBadge').innerHTML = `
+        ${airlineName}
+        <span class="demo-badge">DEMO</span>
+    `;
     document.getElementById('airlineName').textContent = airlineName;
 
-    // Update airline purpose using the function
-    const purpose = getLocalizedPurpose(tenantId, currentLang);
-    document.getElementById('purposeText').textContent = purpose;
+    // Load data
+    airlineData = getAirlineData(tenantId);
 
-    // Update language toggle
-    updateLanguageToggle();
+    if (!airlineData) {
+        document.getElementById('noDataMessage').style.display = 'block';
+        document.getElementById('statsGrid').style.display = 'none';
+        document.getElementById('chartsSection').style.display = 'none';
+        document.querySelector('.pillar-summary-wrapper').style.display = 'none';
+        document.getElementById('surveyPeriod').textContent = 'No survey completed yet';
+        console.log('⚠️ No data found for:', airlineName);
+        return;
+    }
 
-    // Generate questions
-    generateQuestions();
+    document.getElementById('surveyPeriod').textContent = getSurveyPeriod(airlineData.completionDate);
+    console.log('✅ Data loaded for:', airlineName);
+    console.log('📊 Sessions completed:', airlineData.sessionsCompleted);
 
-    // ===== FIX: ALWAYS START AT QUESTION 1 FOR DEMO =====
-    // Clear any saved progress for this tenant to start fresh
-    localStorage.removeItem(`sms_${tenantId}_session_1_answers`);
-    localStorage.removeItem(`sms_${tenantId}_session_1_completed`);
-    
-    // Always start fresh
-    answers = new Array(QUESTIONS_PER_SESSION).fill(null);
-    currentQuestion = 0;
-    selectedValue = null;
-    isAnswerSaved = false;
-
-    // Render
-    document.getElementById('sessionBadge').textContent = 'Demo Session';
-    renderQuestion();
-    updateProgress();
-    updateNavButtons();
-    updateAnsweredCount();
-    updateTranslations();
-
-    console.log('📝 Survey started at Question 1 for:', airlineName);
+    renderAll();
 });
 
 // ============================================================
-// LANGUAGE FUNCTIONS
+// RENDER FUNCTIONS
 // ============================================================
-function updateLanguageToggle() {
-    const toggle = document.getElementById('langToggle');
-    if (toggle) {
-        toggle.textContent = currentLang === 'en' ? '🇳🇵 नेपाली' : '🇬🇧 English';
-    }
+function renderAll() {
+    renderStats();
+    renderPillarSummary();
+    renderPillarChart();
+    renderGapAnalysis();
+    renderCAP();
+    renderCharts();
 }
 
-function toggleLanguage() {
-    currentLang = currentLang === 'en' ? 'np' : 'en';
-    updateLanguageToggle();
-    updateTranslations();
-    renderQuestion();
-    
-    // Update purpose when language changes
-    const purpose = getLocalizedPurpose(tenantId, currentLang);
-    document.getElementById('purposeText').textContent = purpose;
+function renderStats() {
+    document.getElementById('totalSessions').textContent = airlineData.totalSessions || 0;
+    document.getElementById('completedSessions').textContent = airlineData.sessionsCompleted || 0;
+    document.getElementById('avgScore').textContent = (airlineData.overallAverage || 0).toFixed(1);
+    document.getElementById('criticalGaps').textContent = airlineData.criticalGaps || 0;
 }
 
-function updateTranslations() {
-    const t = (key) => getTranslation(key, currentLang);
-    
-    // Update header
-    document.getElementById('surveyTitle').textContent = t('survey_title') || 'Safety Management Survey';
-    
-    // Update progress label
-    const progressLabel = document.querySelector('.progress-label span:first-child');
-    if (progressLabel) progressLabel.textContent = t('progress_label') || 'Survey Progress';
-    
-    // Update buttons
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    
-    if (prevBtn) {
-        prevBtn.innerHTML = `<i class="fas fa-arrow-left"></i> ${t('previous') || 'Previous'}`;
-    }
-    
-    if (nextBtn && currentQuestion < QUESTIONS_PER_SESSION - 1) {
-        nextBtn.innerHTML = `${t('next') || 'Next'} <i class="fas fa-arrow-right"></i>`;
-    } else if (nextBtn) {
-        nextBtn.innerHTML = `<i class="fas fa-check"></i> ${t('complete_survey') || 'Complete Survey'}`;
-    }
-    
-    // Update exit button
-    const exitBtn = document.querySelector('.exit-btn');
-    if (exitBtn) {
-        const exitSpan = exitBtn.querySelector('span');
-        if (exitSpan) exitSpan.textContent = t('exit') || 'Exit';
-    }
-    
-    // Update answered count
-    updateAnsweredCount();
-}
+function renderPillarSummary() {
+    const container = document.getElementById('pillarSummary');
+    container.innerHTML = '';
 
-// ============================================================
-// QUESTION GENERATION
-// ============================================================
-function generateQuestions() {
-    questions = [];
-    for (let i = 0; i < QUESTIONS_PER_SESSION; i++) {
-        const elementIndex = Math.floor(i / QUESTIONS_PER_ELEMENT);
-        const elementNum = elementIndex + 1;
+    const pillarOrder = ['Policy', 'Risk Management', 'Assurance', 'Promotion'];
+    const pillarDescriptions = {
+        'Policy': 'Management commitment, safety accountabilities, and documented safety policies',
+        'Risk Management': 'Hazard identification, risk assessment, and mitigation strategies',
+        'Assurance': 'Performance monitoring, audits, and continuous improvement processes',
+        'Promotion': 'Training, communication, and fostering a positive safety culture'
+    };
 
-        const questionTexts = [
-            `How would you rate your organization's implementation of ${getElementName(elementNum)}?`,
-            `How effective is your organization's approach to ${getElementName(elementNum)}?`,
-            `How well does your organization manage ${getElementName(elementNum)}?`,
-            `What is your assessment of your organization's ${getElementName(elementNum)}?`,
-            `How confident are you in your organization's ${getElementName(elementNum)}?`
-        ];
+    pillarOrder.forEach(pillar => {
+        const score = airlineData.pillarAverages[pillar] || 0;
+        const status = score >= 4.0 ? 'strong' : (score >= 3.0 ? 'moderate' : 'weak');
+        const statusLabel = score >= 4.0 ? 'Strong' : (score >= 3.0 ? 'Moderate' : 'Weak');
+        const statusIcon = score >= 4.0 ? '✅' : (score >= 3.0 ? '⚠️' : '🔴');
 
-        const textIndex = (i % questionTexts.length);
-
-        questions.push({
-            id: i + 1,
-            element: elementNum,
-            elementName: getElementName(elementNum),
-            text: questionTexts[textIndex],
-            options: [
-                { value: 1, label: 'Very Poor' },
-                { value: 2, label: 'Poor' },
-                { value: 3, label: 'Fair' },
-                { value: 4, label: 'Good' },
-                { value: 5, label: 'Excellent' }
-            ]
-        });
-    }
-}
-
-// ============================================================
-// RENDER QUESTION
-// ============================================================
-function renderQuestion() {
-    const q = questions[currentQuestion];
-    const area = document.getElementById('questionArea');
-    const currentAnswer = selectedValue;
-
-    const t = (key) => getTranslation(key, currentLang);
-
-    area.innerHTML = `
-        <div class="question-card">
-            <div class="question-number">
-                <i class="fas fa-question-circle"></i> 
-                ${t('question') || 'Question'} ${currentQuestion + 1} ${t('of') || 'of'} ${QUESTIONS_PER_SESSION}
-            </div>
-            <div class="element-tag">
-                <i class="fas fa-tag"></i> ${t('sms_element') || 'SMS Element'} ${q.element}: ${q.elementName}
-            </div>
-            <div class="question-text">${q.text}</div>
-            <div class="options" id="optionsContainer">
-                ${q.options.map(opt => `
-                    <div class="option ${currentAnswer === opt.value ? 'selected' : ''}" 
-                         data-value="${opt.value}"
-                         onclick="selectOption(${opt.value})">
-                        <div class="radio"></div>
-                        <span class="label">${t(opt.label.toLowerCase().replace(' ', '_')) || opt.label}</span>
-                    </div>
-                `).join('')}
-            </div>
-            <div class="selection-pending ${!isAnswerSaved && selectedValue !== null ? 'show' : ''}" id="pendingIndicator">
-                <i class="fas fa-info-circle"></i>
-                <span>${t('selection_pending') || 'Selection pending. Click "Next" to save your answer.'}</span>
-            </div>
-            <div class="selection-feedback ${isAnswerSaved ? 'show success' : ''}" id="feedback">
-                <i class="fas fa-check-circle"></i>
-                <span>${isAnswerSaved ? (t('answer_saved') || 'Answer saved!') : ''}</span>
-            </div>
-        </div>
-    `;
-
-    // Update button text
-    updateTranslations();
-    updateNavButtons();
-    updateAnsweredCount();
-}
-
-// ============================================================
-// OPTION SELECTION
-// ============================================================
-function selectOption(value) {
-    console.log('🔘 Option selected (temporary):', value);
-
-    selectedValue = value;
-    isAnswerSaved = false;
-
-    const options = document.querySelectorAll('.option');
-    options.forEach(opt => {
-        const optValue = parseInt(opt.dataset.value);
-        if (optValue === value) {
-            opt.classList.add('selected');
-            const radio = opt.querySelector('.radio');
-            if (radio) {
-                radio.textContent = '✓';
-                radio.style.background = '#e8a838';
-                radio.style.borderColor = '#e8a838';
+        const elements = [];
+        for (let i = 1; i <= 12; i++) {
+            if (ELEMENT_PILLARS[i] === pillar) {
+                elements.push(i);
             }
-        } else {
-            opt.classList.remove('selected');
-            const radio = opt.querySelector('.radio');
-            if (radio) {
-                radio.textContent = '';
-                radio.style.background = '';
-                radio.style.borderColor = '';
+        }
+
+        const card = document.createElement('div');
+        card.className = `pillar-card pillar-${pillar.toLowerCase().replace(' ', '-')}`;
+        card.innerHTML = `
+            <div class="pillar-header">
+                <h4><i class="fas ${PILLAR_ICONS[pillar]}"></i> ${pillar}</h4>
+                <span class="pillar-score ${score >= 4.0 ? 'good' : (score >= 3.0 ? 'average' : 'poor')}">${score.toFixed(1)}</span>
+            </div>
+            <div class="pillar-elements">
+                Elements: ${elements.map(e => `<span>${e}</span>`).join('')}
+            </div>
+            <div class="pillar-elements" style="font-size:0.75rem;margin-top:4px;color:#6c757d;">
+                ${pillarDescriptions[pillar]}
+            </div>
+            <div class="pillar-status ${status}">
+                ${statusIcon} ${statusLabel} - ${score >= 4.0 ? 'No immediate action needed' : (score >= 3.0 ? 'Some improvement needed' : 'Immediate attention required')}
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function renderPillarChart() {
+    const ctx = document.getElementById('pillarChart').getContext('2d');
+    const pillarOrder = ['Policy', 'Risk Management', 'Assurance', 'Promotion'];
+    const colors = ['#2e7daf', '#e8a838', '#28a745', '#dc3545'];
+    const scores = pillarOrder.map(p => airlineData.pillarAverages[p] || 0);
+
+    if (pillarChart) pillarChart.destroy();
+
+    pillarChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: pillarOrder,
+            datasets: [{
+                data: scores,
+                backgroundColor: colors,
+                borderColor: ['#ffffff', '#ffffff', '#ffffff', '#ffffff'],
+                borderWidth: 3,
+                hoverOffset: 15
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            return `${label}: ${value.toFixed(1)} / 5.0`;
+                        }
+                    }
+                }
+            },
+            cutout: '68%'
+        }
+    });
+
+    const container = document.getElementById('pillarLegend');
+    container.innerHTML = '';
+    pillarOrder.forEach((label, index) => {
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.innerHTML = `
+            <span class="color-box" style="background:${colors[index]};"></span>
+            <span>${label}</span>
+            <span class="score">${scores[index].toFixed(1)}</span>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function renderGapAnalysis() {
+    const container = document.getElementById('gapGrid');
+    container.innerHTML = '';
+
+    if (!airlineData.gaps) {
+        container.innerHTML =
+            `<div style="text-align:center;padding:30px;color:#6c757d;grid-column:1/-1;">No gap data available.</div>`;
+        return;
+    }
+
+    const sortedGaps = Object.keys(airlineData.gaps).sort((a, b) => airlineData.gaps[b].gap - airlineData.gaps[a].gap);
+
+    sortedGaps.forEach(key => {
+        const gap = airlineData.gaps[key];
+        const severityClass = gap.severity.includes('Critical') ? 'critical' :
+            gap.severity.includes('Moderate') ? 'moderate' :
+            gap.severity.includes('Minor') ? 'minor' : 'compliant';
+
+        const item = document.createElement('div');
+        item.className = `gap-item ${severityClass}`;
+
+        const gapValue = gap.gap.toFixed(1);
+        const gapClass = gap.gap <= 0 ? 'positive' : (gap.gap <= 0.5 ? 'neutral' : 'negative');
+        const gapDisplay = gap.gap <= 0 ? '+' + Math.abs(gap.gap).toFixed(1) : '-' + gap.gap.toFixed(1);
+
+        item.innerHTML = `
+            <div class="element-name">
+                <span style="font-weight:700;color:#0a2e4a;">Element ${key}</span>
+                <span style="font-weight:400;color:#6c757d;font-size:0.85rem;display:block;">${gap.name}</span>
+                <span class="pillar-tag">${gap.pillar}</span>
+            </div>
+            <div class="score">
+                <span class="current">${gap.current.toFixed(1)}</span>
+                <span class="target">/ 5.0</span>
+                <span class="gap-value ${gapClass}">${gapDisplay}</span>
+            </div>
+        `;
+
+        container.appendChild(item);
+    });
+}
+
+function renderCAP() {
+    const container = document.getElementById('capGrid');
+    container.innerHTML = '';
+
+    if (!airlineData.gaps) {
+        container.innerHTML =
+            `<div style="grid-column:1/-1;text-align:center;padding:30px;color:#6c757d;">No corrective actions needed.</div>`;
+        return;
+    }
+
+    const pillarGroups = {};
+    for (const key in airlineData.gaps) {
+        const gap = airlineData.gaps[key];
+        if (gap.gap > 0.3) {
+            if (!pillarGroups[gap.pillar]) pillarGroups[gap.pillar] = [];
+            pillarGroups[gap.pillar].push({ key, gap });
+        }
+    }
+
+    if (Object.keys(pillarGroups).length === 0) {
+        container.innerHTML =
+            `<div style="grid-column:1/-1;text-align:center;padding:30px;color:#28a745;">
+                <i class="fas fa-check-circle" style="font-size:2rem;display:block;margin-bottom:10px;"></i>
+                <h4 style="color:#28a745;">Excellent! No corrective actions needed.</h4>
+            </div>`;
+        return;
+    }
+
+    const actionTemplates = {
+        'Policy': [
+            'Review and update safety policy documents to align with ICAO Annex 19 requirements.',
+            'Establish clear safety accountabilities and responsibilities at all organizational levels.',
+            'Conduct management safety briefings to reinforce commitment to safety.'
+        ],
+        'Risk Management': [
+            'Implement a formal hazard identification and risk assessment process.',
+            'Develop risk mitigation strategies with clear timelines and responsibilities.',
+            'Conduct regular risk assessment training for all relevant personnel.'
+        ],
+        'Assurance': [
+            'Establish safety performance indicators (SPIs) to monitor safety performance.',
+            'Implement a regular internal safety audit program.',
+            'Develop a management of change process for operational changes.'
+        ],
+        'Promotion': [
+            'Develop and implement a comprehensive safety training program.',
+            'Establish effective safety communication channels across the organization.',
+            'Foster a positive safety culture through leadership engagement.'
+        ]
+    };
+
+    const severityOrder = { 'Critical Gap': 0, 'Moderate Gap': 1, 'Minor Gap': 2 };
+
+    for (const pillar in pillarGroups) {
+        pillarGroups[pillar].sort((a, b) => {
+            return severityOrder[a.gap.severity] - severityOrder[b.gap.severity];
+        });
+
+        const topGap = pillarGroups[pillar][0];
+        const priorityClass = topGap.gap.severity.includes('Critical') ? 'high' :
+            topGap.gap.severity.includes('Moderate') ? 'medium' : 'low';
+        const priorityLabel = topGap.gap.severity.includes('Critical') ? 'HIGH' :
+            topGap.gap.severity.includes('Moderate') ? 'MEDIUM' : 'LOW';
+
+        const actions = actionTemplates[pillar] || ['Review and improve safety management practices.'];
+
+        const card = document.createElement('div');
+        card.className = `cap-item priority-${priorityClass}`;
+        card.innerHTML = `
+            <div class="cap-header">
+                <span class="cap-pillar"><i class="fas ${PILLAR_ICONS[pillar]}"></i> ${pillar}</span>
+                <span class="cap-priority ${priorityClass}">${priorityLabel} PRIORITY</span>
+            </div>
+            <div class="cap-title">${pillar} Improvement Plan</div>
+            <div class="cap-current">
+                Current score: ${topGap.gap.current.toFixed(1)}/5.0 | Gap: ${topGap.gap.gap.toFixed(1)} points
+                ${pillarGroups[pillar].length > 1 ? `| ${pillarGroups[pillar].length} elements affected` : ''}
+            </div>
+            <div class="cap-action">
+                <i class="fas fa-check-circle"></i>
+                <strong>Recommended Actions:</strong>
+                <ul style="margin-top:5px;padding-left:20px;font-size:0.85rem;color:#495057;">
+                    ${actions.slice(0, 3).map(a => `<li>${a}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+        container.appendChild(card);
+    }
+}
+
+function renderCharts() {
+    const ctx1 = document.getElementById('elementChart').getContext('2d');
+    let labels = [],
+        scores = [],
+        colors = [];
+
+    if (airlineData.elementAverages) {
+        const sortedKeys = Object.keys(airlineData.elementAverages).sort((a, b) => parseInt(a) - parseInt(b));
+        labels = sortedKeys.map(key => `E${key}`);
+        scores = sortedKeys.map(key => airlineData.elementAverages[key]);
+        colors = scores.map(score => {
+            if (score >= 4.0) return '#28a745';
+            if (score >= 3.0) return '#ffc107';
+            if (score >= 2.0) return '#fd7e14';
+            return '#dc3545';
+        });
+    } else {
+        labels = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'E10', 'E11', 'E12'];
+        scores = new Array(12).fill(0);
+        colors = new Array(12).fill('#dee2e6');
+    }
+
+    if (elementChart) elementChart.destroy();
+
+    elementChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Score (out of 5)',
+                data: scores,
+                backgroundColor: colors,
+                borderColor: colors.map(c => c),
+                borderWidth: 1,
+                borderRadius: 4,
+                maxBarThickness: 35
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Score: ${context.parsed.y.toFixed(1)} / 5.0`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { min: 0, max: 5, ticks: { stepSize: 1 }, title: { display: true, text: 'Score' } }
             }
         }
     });
 
-    const pending = document.getElementById('pendingIndicator');
-    if (pending) {
-        pending.classList.add('show');
-        const t = (key) => getTranslation(key, currentLang);
-        pending.innerHTML = `<i class="fas fa-info-circle"></i> <span>${t('selection_pending') || 'Selection pending. Click "Next" to save your answer.'}</span>`;
+    const ctx2 = document.getElementById('gapChart').getContext('2d');
+    let gapLabels = [],
+        gapData = [],
+        gapColors = [];
+
+    if (airlineData.gaps) {
+        const sortedGaps = Object.keys(airlineData.gaps).sort((a, b) => airlineData.gaps[b].gap - airlineData.gaps[a].gap);
+        gapLabels = sortedGaps.map(key => `E${key}`);
+        gapData = sortedGaps.map(key => airlineData.gaps[key].gap);
+        gapColors = gapData.map(gap => {
+            if (gap <= 0) return '#28a745';
+            if (gap <= 0.5) return '#ffc107';
+            if (gap <= 1.0) return '#fd7e14';
+            return '#dc3545';
+        });
+    } else {
+        gapLabels = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'E10', 'E11', 'E12'];
+        gapData = new Array(12).fill(0);
+        gapColors = new Array(12).fill('#dee2e6');
     }
 
-    const feedback = document.getElementById('feedback');
-    if (feedback) {
-        feedback.classList.remove('show');
-        feedback.className = 'selection-feedback';
-        feedback.innerHTML = '';
-    }
+    if (gapChart) gapChart.destroy();
 
-    updateNavButtons();
+    gapChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: gapLabels,
+            datasets: [{
+                label: 'Gap to Target (4.5)',
+                data: gapData,
+                backgroundColor: gapColors,
+                borderColor: gapColors.map(c => c),
+                borderWidth: 1,
+                borderRadius: 4,
+                maxBarThickness: 35
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const gap = context.parsed.y;
+                            if (gap <= 0) return `✅ Compliant (${Math.abs(gap).toFixed(1)} above target)`;
+                            return `⚠️ Gap: ${gap.toFixed(1)} points`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { min: 0, max: 2.5, ticks: { stepSize: 0.5 }, title: { display: true, text: 'Gap Size' } }
+            }
+        }
+    });
 }
 
 // ============================================================
-// SAVE ANSWER
+// EXPORT FUNCTIONS
 // ============================================================
-function saveCurrentAnswer() {
-    if (selectedValue === null || selectedValue === undefined) {
-        return false;
+function exportPDF() {
+    const element = document.getElementById('dashboardContainer');
+    const btn = document.querySelector('.btn-export.pdf');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    btn.disabled = true;
+
+    const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `Safety_Report_${airlineName}_${new Date().toISOString().split('T')[0]}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    if (typeof html2pdf !== 'undefined') {
+        html2pdf().set(opt).from(element).save().then(function() {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            console.log('✅ PDF exported');
+        }).catch(function(err) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            alert('PDF export failed. Please use Print > Save as PDF.');
+        });
+    } else {
+        alert('PDF export requires html2pdf library. Please use Print > Save as PDF.');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     }
-
-    answers[currentQuestion] = selectedValue;
-    isAnswerSaved = true;
-
-    localStorage.setItem(`sms_${tenantId}_session_1_answers`, JSON.stringify(answers));
-
-    const feedback = document.getElementById('feedback');
-    if (feedback) {
-        const t = (key) => getTranslation(key, currentLang);
-        feedback.className = 'selection-feedback show success';
-        feedback.innerHTML = `<i class="fas fa-check-circle"></i> <span>${t('answer_saved') || 'Answer saved!'}</span>`;
-    }
-
-    const pending = document.getElementById('pendingIndicator');
-    if (pending) {
-        pending.classList.remove('show');
-    }
-
-    console.log('✅ Answer saved:', selectedValue);
-
-    updateProgress();
-    updateAnsweredCount();
-    updateNavButtons();
-
-    return true;
 }
 
-// ============================================================
-// NAVIGATION
-// ============================================================
-function nextQuestion() {
-    if (selectedValue === null || selectedValue === undefined) {
-        const t = (key) => getTranslation(key, currentLang);
-        alert(t('select_option') || 'Please select an answer before proceeding.');
+function exportExcel() {
+    if (!airlineData) {
+        alert('No data to export.');
         return;
     }
 
-    saveCurrentAnswer();
+    let csv = `Safety Report - ${airlineName}\n`;
+    csv += `Generated: ${new Date().toLocaleString()}\n`;
+    csv += `Survey Period: ${document.getElementById('surveyPeriod').textContent}\n\n`;
+    csv += 'PILLAR SUMMARY\n';
+    csv += 'Pillar,Average Score,Status\n';
+    for (const pillar in airlineData.pillarAverages) {
+        const score = airlineData.pillarAverages[pillar] || 0;
+        const status = score >= 4.0 ? 'Strong' : (score >= 3.0 ? 'Moderate' : 'Weak');
+        csv += `${pillar},${score.toFixed(1)},${status}\n`;
+    }
+    csv += '\nELEMENT DETAILS\n';
+    csv += 'Element,Name,Pillar,Current Score,Target Score,Gap,Severity\n';
+    for (const key in airlineData.gaps) {
+        const gap = airlineData.gaps[key];
+        csv +=
+            `Element ${key},${gap.name},${gap.pillar},${gap.current.toFixed(1)},4.5,${gap.gap.toFixed(1)},${gap.severity}\n`;
+    }
+    csv += '\nSUMMARY\n';
+    csv += `Total Sessions,${airlineData.totalSessions}\n`;
+    csv += `Completed Sessions,${airlineData.sessionsCompleted}\n`;
+    csv += `Overall Average,${airlineData.overallAverage.toFixed(1)}\n`;
+    csv += `Critical Gaps,${airlineData.criticalGaps}\n`;
 
-    if (currentQuestion < QUESTIONS_PER_SESSION - 1) {
-        currentQuestion++;
-        selectedValue = answers[currentQuestion] || null;
-        isAnswerSaved = answers[currentQuestion] !== null && answers[currentQuestion] !== undefined;
-        renderQuestion();
-        updateProgress();
-        updateNavButtons();
-        updateAnsweredCount();
-        document.querySelector('.question-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Safety_Report_${airlineName}_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    alert('✅ Excel export complete!');
+}
+
+// ============================================================
+// LOGOUT
+// ============================================================
+function logout() {
+    if (typeof logoutUser === 'function') {
+        logoutUser(true);
     } else {
-        completeSurvey();
-    }
-}
-
-function prevQuestion() {
-    if (currentQuestion > 0) {
-        if (!isAnswerSaved && selectedValue !== null) {
-            selectedValue = answers[currentQuestion] || null;
-            isAnswerSaved = answers[currentQuestion] !== null && answers[currentQuestion] !== undefined;
-        }
-
-        currentQuestion--;
-        selectedValue = answers[currentQuestion] || null;
-        isAnswerSaved = answers[currentQuestion] !== null && answers[currentQuestion] !== undefined;
-        renderQuestion();
-        updateProgress();
-        updateNavButtons();
-        updateAnsweredCount();
-        document.querySelector('.question-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-}
-
-function updateNavButtons() {
-    document.getElementById('prevBtn').disabled = currentQuestion === 0;
-
-    const nextBtn = document.getElementById('nextBtn');
-    nextBtn.disabled = selectedValue === null || selectedValue === undefined;
-}
-
-function updateProgress() {
-    const answered = answers.filter(a => a !== null && a !== undefined).length;
-    const progress = Math.round((answered / QUESTIONS_PER_SESSION) * 100);
-
-    document.getElementById('progressFill').style.width = progress + '%';
-    document.getElementById('percentText').textContent = progress + '%';
-    document.getElementById('progressText').textContent = `Question ${currentQuestion + 1} of ${QUESTIONS_PER_SESSION}`;
-}
-
-function updateAnsweredCount() {
-    const answered = answers.filter(a => a !== null && a !== undefined).length;
-    const t = (key) => getTranslation(key, currentLang);
-    document.getElementById('answeredCount').textContent = `${answered} ${t('of') || 'of'} ${QUESTIONS_PER_SESSION} ${t('answered') || 'answered'}`;
-}
-
-// ============================================================
-// COMPLETE SURVEY
-// ============================================================
-function completeSurvey() {
-    if (selectedValue !== null && !isAnswerSaved) {
-        saveCurrentAnswer();
-    }
-
-    const unanswered = answers.filter(a => a === null || a === undefined);
-    if (unanswered.length > 0) {
-        const t = (key) => getTranslation(key, currentLang);
-        alert(`${t('please_answer_all') || 'Please answer all questions before completing the survey.'} (${unanswered.length} ${t('remaining') || 'remaining'})`);
-        const firstUnanswered = answers.findIndex(a => a === null || a === undefined);
-        if (firstUnanswered !== -1) {
-            currentQuestion = firstUnanswered;
-            selectedValue = answers[currentQuestion] || null;
-            isAnswerSaved = answers[currentQuestion] !== null && answers[currentQuestion] !== undefined;
-            renderQuestion();
-            updateProgress();
-            updateNavButtons();
-            updateAnsweredCount();
-            document.querySelector('.question-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        return;
-    }
-
-    // Mark as completed
-    localStorage.setItem(`sms_${tenantId}_session_1_completed`, 'true');
-    localStorage.setItem(`sms_${tenantId}_completed_sessions`, '5');
-    localStorage.setItem(`sms_${tenantId}_last_completion_date`, new Date().toISOString());
-
-    console.log('✅ Survey completed for:', tenantId);
-
-    // Redirect to Thank You page
-    window.location.href = `../thankyou.html?tenant=${tenantId}&lang=${currentLang}`;
-}
-
-// ============================================================
-// EXIT SURVEY
-// ============================================================
-function exitSurvey() {
-    const answeredCount = answers.filter(a => a !== null && a !== undefined).length;
-    const totalQuestions = QUESTIONS_PER_SESSION;
-    const t = (key) => getTranslation(key, currentLang);
-    let message = '';
-
-    if (answeredCount === 0) {
-        message = t('exit_no_answers') || 'You haven\'t answered any questions yet. Your progress will not be saved.\n\nAre you sure you want to exit?';
-    } else if (answeredCount === totalQuestions) {
-        message = t('exit_all_answered') || 'You have completed all ' + totalQuestions + ' questions. Your responses are saved.\n\nAre you sure you want to exit?';
-    } else {
-        message = t('exit_partial') || 'You have answered ' + answeredCount + ' of ' + totalQuestions + ' questions. Your progress has been saved.\n\nYou can continue later. Are you sure you want to exit?';
-    }
-
-    if (confirm(message)) {
-        window.location.href = `../thankyou.html?tenant=${tenantId}&lang=${currentLang}`;
-    }
-}
-
-// ============================================================
-// KEYBOARD SHORTCUTS
-// ============================================================
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'ArrowRight' && !document.getElementById('nextBtn').disabled) {
-        nextQuestion();
-    }
-    if (e.key === 'ArrowLeft' && !document.getElementById('prevBtn').disabled) {
-        prevQuestion();
-    }
-    if (e.key >= '1' && e.key <= '5') {
-        const options = document.querySelectorAll('.option');
-        const index = parseInt(e.key) - 1;
-        if (options[index]) {
-            options[index].click();
+        if (confirm('Are you sure you want to logout?')) {
+            localStorage.removeItem('sms_user_data');
+            localStorage.removeItem('sms_token');
+            window.location.href = 'index.html';
         }
     }
-    if (e.key === 'Escape') {
-        exitSurvey();
-    }
-    if (e.key === 'Enter' && !document.getElementById('nextBtn').disabled) {
-        nextQuestion();
-    }
-});
+}
 
 // ============================================================
 // EXPOSE FOR TESTING
 // ============================================================
-window.__survey = {
-    currentQuestion,
-    answers,
-    selectedValue,
-    isAnswerSaved,
+window.__safetyDashboard = {
+    airlineData,
     tenantId,
     airlineName,
-    currentLang,
-    QUESTIONS_PER_SESSION,
-    questions,
-    renderQuestion,
-    selectOption,
-    saveCurrentAnswer,
-    nextQuestion,
-    prevQuestion,
-    completeSurvey,
-    exitSurvey,
-    toggleLanguage,
-    getLocalizedPurpose
+    exportPDF,
+    exportExcel,
+    logout,
+    getSurveyPeriod
 };
 
-console.log('📝 Survey ready - starting at Question 1');
+console.log('🛡️ Safety Officer Dashboard ready');
 console.log(`✈️ Airline: ${airlineName}`);
-console.log(`📊 ${answers.filter(a => a !== null).length} of ${QUESTIONS_PER_SESSION} answered`);
-console.log('💡 Select an option → Click "Next" to save');
+console.log(`📊 Data loaded: ${airlineData ? 'Yes' : 'No'}`);
+console.log(`📅 Survey Period: ${document.getElementById('surveyPeriod').textContent}`);

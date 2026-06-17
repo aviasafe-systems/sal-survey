@@ -1,10 +1,13 @@
 /*
 ================================================================================
 FILE: SurveySMS/js/dashboard.js
-VERSION: 1.0
+VERSION: 1.0.0
 REVISION DATE: 2026-06-17
-PURPOSE: Dashboard page logic - session management, progress tracking
-AFFECTED: dashboard.html
+PURPOSE: Dashboard page logic - session management, progress tracking using auth module
+DEPENDENCIES: utils.js, storage.js, auth.js, translations.js
+USAGE: dashboard.html (CAAN) and safety-dashboard.html (Safety Officers)
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
 ================================================================================
 */
 
@@ -91,6 +94,7 @@ let userData = null;
 let tenantId = null;
 let airlineName = null;
 let currentLang = 'en';
+let userRole = 'participant';
 
 // ============================================================
 // INITIALIZATION
@@ -98,10 +102,19 @@ let currentLang = 'en';
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📊 Dashboard Loaded');
 
-    // Check authentication
-    userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
+    // ============================================================
+    // 🔐 AUTHENTICATION USING AUTH MODULE
+    // ============================================================
+    
+    // Get user data from auth module
+    if (typeof getCurrentUser === 'function') {
+        userData = getCurrentUser();
+    } else {
+        // Fallback for compatibility
+        userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
+    }
 
-    if (!userData.email) {
+    if (!userData || !userData.email) {
         window.location.href = 'login.html';
         return;
     }
@@ -109,6 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
     tenantId = userData.tenantId || 'default';
     airlineName = userData.airline || userData.displayName || 'Aviation Organization';
     currentLang = userData.language || 'en';
+    userRole = userData.role || 'participant';
 
     // Update UI
     updateUserUI();
@@ -118,6 +132,8 @@ document.addEventListener('DOMContentLoaded', function() {
     updateViewReportButton();
     updateLanguageToggle();
     updateTranslations();
+    
+    console.log(`📊 Dashboard ready for: ${airlineName} (${userRole})`);
 });
 
 // ============================================================
@@ -133,7 +149,11 @@ function updateLanguageToggle() {
 function toggleLanguage() {
     currentLang = currentLang === 'en' ? 'np' : 'en';
     userData.language = currentLang;
-    localStorage.setItem('sms_user_data', JSON.stringify(userData));
+    if (typeof setUserData === 'function') {
+        setUserData(userData);
+    } else {
+        localStorage.setItem('sms_user_data', JSON.stringify(userData));
+    }
     updateLanguageToggle();
     updateTranslations();
     renderSessions();
@@ -145,29 +165,23 @@ function toggleLanguage() {
 function updateTranslations() {
     const t = (key) => getTranslation(key, currentLang);
 
-    // Dashboard title
     document.title = t('dashboard_title') || 'Dashboard - Safety Management Survey';
 
-    // Stats labels
     document.getElementById('labelCompleted').textContent = t('completed_sessions') || 'Completed Sessions';
     document.getElementById('labelCurrent').textContent = t('current_session') || 'Current Session';
     document.getElementById('labelQuestions').textContent = t('questions_answered') || 'Questions Answered';
     document.getElementById('labelProgress').textContent = t('overall_progress') || 'Overall Progress';
 
-    // Progress label
     document.getElementById('progressLabel').textContent = t('overall_survey_progress') || 'Overall Survey Progress';
     document.getElementById('progressText').textContent = t('progress_percent') || '0% Complete';
 
-    // Sessions section
     document.getElementById('sessionsTitle').textContent = t('survey_sessions') || 'Survey Sessions';
     document.getElementById('sessionsDescription').textContent = t('sessions_description') || 'Complete all 5 sessions to generate your comprehensive SMS gap analysis report. Each session contains 24 questions and takes approximately 15-20 minutes.';
 
-    // View Report section
     document.getElementById('viewReportTitle').textContent = t('view_report_title') || 'View Your Analytics Report';
     document.getElementById('viewReportStatus').textContent = t('view_report_status') || 'Complete at least one session to generate your report.';
     document.getElementById('viewReportBtnText').textContent = t('view_report_btn') || 'View Analytics Report';
 
-    // Logout button
     document.getElementById('logoutBtnText').textContent = t('logout') || 'Logout';
 }
 
@@ -234,7 +248,6 @@ function renderSessions() {
     const current = parseInt(localStorage.getItem(`sms_${tenantId}_current_session`) || '0');
     const t = (key) => getTranslation(key, currentLang);
 
-    // Check if no data exists
     const hasData = localStorage.getItem(`sms_${tenantId}_session_1_answers`) !== null;
 
     if (!hasData && completed === 0) {
@@ -388,9 +401,13 @@ function startSession(sessionNumber) {
 function logout() {
     const t = (key) => getTranslation(key, currentLang);
     if (confirm(t('logout_confirm') || 'Are you sure you want to logout?')) {
-        localStorage.removeItem('sms_user_data');
-        localStorage.removeItem('sms_token');
-        window.location.href = `login.html?lang=${currentLang}`;
+        if (typeof logoutUser === 'function') {
+            logoutUser(true);
+        } else {
+            localStorage.removeItem('sms_user_data');
+            localStorage.removeItem('sms_token');
+            window.location.href = `login.html?lang=${currentLang}`;
+        }
     }
 }
 

@@ -1,12 +1,17 @@
 /*
 ================================================================================
 FILE: SurveySMS/css/thankyou.css
-VERSION: 1.0
+VERSION: 1.0.0
 REVISION DATE: 2026-06-17
-PURPOSE: Thank You page specific styles
-AFFECTED: thankyou.html
+PURPOSE: Thank You page specific styles with Namaste logo animation
+DEPENDENCIES: global.css
+USAGE: thankyou.html
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
 ================================================================================
 */
+
+/* [Your existing thankyou.css content - unchanged, only header updated] */
 
 /* ===== Thank You Wrapper ===== */
 .thankyou-wrapper {

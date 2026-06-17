@@ -1,53 +1,22 @@
 /*
 ================================================================================
 FILE: SurveySMS/js/admin.js
-VERSION: 1.0
+VERSION: 1.1.0
 REVISION DATE: 2026-06-17
 PURPOSE: Admin panel logic - authentication, data management, language support
-AFFECTED: admin.html
+DEPENDENCIES: credentials.js, translations.js
+USAGE: admin.html
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
 ================================================================================
 */
-
-// ============================================================
-// CONFIGURATION
-// ============================================================
-const ADMIN_PASSWORD = 'survey2026';
-
-const AIRLINES = [
-    'Sita Air',
-    'Tara Air',
-    'Summit Air',
-    'Buddha Air',
-    'Yeti Airlines',
-    'Shree Airlines',
-    'Danfe Air'
-];
-
-const AIRLINE_TENANTS = {
-    'Sita Air': 'sita-air',
-    'Tara Air': 'tara-air',
-    'Summit Air': 'summit-air',
-    'Buddha Air': 'buddha-air',
-    'Yeti Airlines': 'yeti-airlines',
-    'Shree Airlines': 'shree-airlines',
-    'Danfe Air': 'danfe-air'
-};
-
-const AIRLINE_EMAILS = {
-    'Sita Air': 'demo@sitaair.com.np',
-    'Tara Air': 'demo@taraair.com',
-    'Summit Air': 'demo@summitair.com.np',
-    'Buddha Air': 'demo@buddhaair.com',
-    'Yeti Airlines': 'demo@yetiairlines.com',
-    'Shree Airlines': 'demo@shreeairlines.com',
-    'Danfe Air': 'demo@flydanfe.com'
-};
 
 // ============================================================
 // STATE
 // ============================================================
 let isLoggedIn = false;
 let currentLang = 'en';
+let ADMIN_EMAIL = 'admin@surveysms.com';
 
 // ============================================================
 // INITIALIZATION
@@ -58,16 +27,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get language from localStorage
     currentLang = localStorage.getItem('sms_lang') || 'en';
 
-    // Render airlines
+    // Get airlines from credentials module
     renderAirlines();
 
     // Update language
     updateLanguageToggle();
     updateTranslations();
 
-    // Check if already logged in
+    // Check if already logged in using credentials module
     const userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
-    if (userData.email === 'admin@surveysms.com') {
+    if (userData.email === ADMIN_EMAIL) {
         isLoggedIn = true;
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('adminPanel').classList.add('show');
@@ -75,6 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     console.log('💡 Admin panel ready in:', currentLang);
+    console.log('💡 Admin email:', ADMIN_EMAIL);
 });
 
 // ============================================================
@@ -141,40 +111,80 @@ function updateTranslations() {
 }
 
 // ============================================================
-// LOGIN
+// LOGIN (UPDATED)
 // ============================================================
 function handleLogin(event) {
     event.preventDefault();
 
+    const email = document.getElementById('adminEmail')?.value?.trim() || ADMIN_EMAIL;
     const password = document.getElementById('adminPassword').value.trim();
     const errorEl = document.getElementById('loginError');
     const t = (key) => getTranslation(key, currentLang);
 
-    if (password === ADMIN_PASSWORD) {
-        isLoggedIn = true;
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('adminPanel').classList.add('show');
-        errorEl.classList.remove('show');
-        console.log('✅ Admin login successful');
-        showStatus('success', t('login_success') || '✅ Login successful! Welcome to the Admin Panel.');
-        renderAirlines();
+    // Use centralized credential validation
+    if (typeof validateCredentials === 'function') {
+        const user = validateCredentials(email, password);
+        
+        if (user && user.role === 'admin') {
+            isLoggedIn = true;
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('adminPanel').classList.add('show');
+            errorEl.classList.remove('show');
+            console.log('✅ Admin login successful');
+            showStatus('success', t('login_success') || '✅ Login successful! Welcome to the Admin Panel.');
+            renderAirlines();
+            return false;
+        }
     } else {
-        errorEl.textContent = t('invalid_password') || 'Invalid credentials. Please try again.';
-        errorEl.classList.add('show');
-        console.log('❌ Admin login failed');
+        // Fallback to hardcoded password if credentials module not loaded
+        console.warn('⚠️ Credentials module not loaded, using fallback');
+        if (password === 'survey2026') {
+            isLoggedIn = true;
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('adminPanel').classList.add('show');
+            errorEl.classList.remove('show');
+            console.log('✅ Admin login successful (fallback)');
+            showStatus('success', t('login_success') || '✅ Login successful! Welcome to the Admin Panel.');
+            renderAirlines();
+            return false;
+        }
     }
 
+    // Login failed
+    errorEl.textContent = t('invalid_password') || 'Invalid credentials. Please try again.';
+    errorEl.classList.add('show');
+    console.log('❌ Admin login failed');
     return false;
 }
 
 // ============================================================
-// RENDER AIRLINES
+// RENDER AIRLINES (UPDATED)
 // ============================================================
 function renderAirlines() {
     const container = document.getElementById('airlinesList');
-    container.innerHTML = AIRLINES.map(airline =>
-        `<span class="airline-tag"><i class="fas fa-plane"></i> ${airline}</span>`
-    ).join('');
+    
+    // Use getAirlines function from credentials module if available
+    if (typeof getAirlines === 'function') {
+        const airlines = getAirlines();
+        container.innerHTML = airlines.map(airline =>
+            `<span class="airline-tag">
+                <i class="fas fa-plane"></i> ${airline.name}
+                ${airline.hasParticipant ? '<span class="badge-participant">👤</span>' : ''}
+                ${airline.hasSafetyOfficer ? '<span class="badge-officer">🛡️</span>' : ''}
+            </span>`
+        ).join('');
+        console.log(`✅ Rendered ${airlines.length} airlines from credentials`);
+    } else {
+        // Fallback to hardcoded airlines
+        const AIRLINES = [
+            'Sita Air', 'Tara Air', 'Summit Air', 'Buddha Air',
+            'Yeti Airlines', 'Shree Airlines', 'Danfe Air'
+        ];
+        container.innerHTML = AIRLINES.map(airline =>
+            `<span class="airline-tag"><i class="fas fa-plane"></i> ${airline}</span>`
+        ).join('');
+        console.warn('⚠️ Credentials module not loaded, using hardcoded airlines');
+    }
 }
 
 // ============================================================
@@ -233,7 +243,7 @@ function wipeData() {
 }
 
 // ============================================================
-// GENERATE DUMMY DATA
+// GENERATE DUMMY DATA (UPDATED)
 // ============================================================
 function generateDummyData() {
     const t = (key) => getTranslation(key, currentLang);
@@ -276,8 +286,29 @@ function generateDummyResponses() {
         summary: ''
     };
 
-    AIRLINES.forEach((airline, index) => {
-        const tenantId = AIRLINE_TENANTS[airline];
+    // Get airlines from credentials module or use defaults
+    let airlines;
+    if (typeof getAirlines === 'function') {
+        airlines = getAirlines().map(a => a.name);
+    } else {
+        airlines = [
+            'Sita Air', 'Tara Air', 'Summit Air', 'Buddha Air',
+            'Yeti Airlines', 'Shree Airlines', 'Danfe Air'
+        ];
+    }
+
+    const tenantMap = {
+        'Sita Air': 'sita-air',
+        'Tara Air': 'tara-air',
+        'Summit Air': 'summit-air',
+        'Buddha Air': 'buddha-air',
+        'Yeti Airlines': 'yeti-airlines',
+        'Shree Airlines': 'shree-airlines',
+        'Danfe Air': 'danfe-air'
+    };
+
+    airlines.forEach((airline, index) => {
+        const tenantId = tenantMap[airline] || airline.toLowerCase().replace(/ /g, '-');
         const sessions = generateSessionsForAirline(airline, tenantId, index);
         results.airlines.push({
             name: airline,
@@ -288,9 +319,9 @@ function generateDummyResponses() {
     });
 
     results.summary = `
-        Generated data for <strong>${AIRLINES.length}</strong> airlines<br>
+        Generated data for <strong>${airlines.length}</strong> airlines<br>
         Total sessions created: <strong>${results.totalSessions}</strong><br>
-        Each airline has <strong>5 sessions</strong> (${AIRLINES.length * 5} total)
+        Each airline has <strong>5 sessions</strong> (${airlines.length * 5} total)
     `;
 
     return results;
@@ -321,9 +352,19 @@ function generateSessionsForAirline(airline, tenantId, seed) {
     };
     localStorage.setItem(`sms_${tenantId}_airline_data`, JSON.stringify(airlineData));
 
-    // Create user for this airline
+    // Get email from credentials if available
+    let email = `demo@${tenantId}.com`;
+    if (typeof window !== 'undefined' && window.CREDENTIALS) {
+        for (const [e, u] of Object.entries(window.CREDENTIALS)) {
+            if (u.airline === airline && u.role === 'participant') {
+                email = e;
+                break;
+            }
+        }
+    }
+
     const userData = {
-        email: AIRLINE_EMAILS[airline],
+        email: email,
         name: `${airline} Demo User`,
         role: 'airline',
         airline: airline,
@@ -392,8 +433,29 @@ function getDataStats() {
     let totalKeys = 0;
     let totalSize = 0;
 
-    AIRLINES.forEach(airline => {
-        const tenantId = AIRLINE_TENANTS[airline];
+    // Get airlines from credentials
+    let airlineNames;
+    if (typeof getAirlines === 'function') {
+        airlineNames = getAirlines().map(a => a.name);
+    } else {
+        airlineNames = [
+            'Sita Air', 'Tara Air', 'Summit Air', 'Buddha Air',
+            'Yeti Airlines', 'Shree Airlines', 'Danfe Air'
+        ];
+    }
+
+    const tenantMap = {
+        'Sita Air': 'sita-air',
+        'Tara Air': 'tara-air',
+        'Summit Air': 'summit-air',
+        'Buddha Air': 'buddha-air',
+        'Yeti Airlines': 'yeti-airlines',
+        'Shree Airlines': 'shree-airlines',
+        'Danfe Air': 'danfe-air'
+    };
+
+    airlineNames.forEach(airline => {
+        const tenantId = tenantMap[airline] || airline.toLowerCase().replace(/ /g, '-');
         let sessions = 0;
 
         for (let i = 1; i <= 5; i++) {
@@ -480,19 +542,16 @@ document.addEventListener('keydown', function(e) {
 // EXPOSE FOR TESTING
 // ============================================================
 window.__admin = {
-    AIRLINES,
-    AIRLINE_TENANTS,
-    AIRLINE_EMAILS,
-    ADMIN_PASSWORD,
+    ADMIN_EMAIL,
     currentLang,
     wipeData,
     generateDummyData,
     showStats,
     resetDemoUser,
-    toggleLanguage
+    toggleLanguage,
+    renderAirlines
 };
 
-console.log('🔐 Admin Panel ready with English/Nepali support');
-console.log(`🔑 Password: ${ADMIN_PASSWORD}`);
-console.log('✈️ Airlines:', AIRLINES.join(', '));
+console.log('🔐 Admin Panel ready with centralized credential management');
+console.log('💡 Using credentials.js for admin authentication');
 console.log('💡 Click the language toggle to switch between English and Nepali');

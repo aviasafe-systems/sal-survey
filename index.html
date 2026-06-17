@@ -1,11 +1,13 @@
 <!--
 ================================================================================
 FILE: SurveySMS/index.html
-VERSION: 17.0
+VERSION: 1.0.0
 REVISION DATE: 2026-06-17
-PURPOSE: Landing page - Marketing focus on SMS Gap Analysis (English Only)
-REVISED PURPOSE: Added Tenant Login link in header
-AFFECTED: All visitors to the platform
+PURPOSE: Landing page - Marketing focus on SMS Gap Analysis with ICAO Annex 19 compliance
+DEPENDENCIES: css/global.css, css/landing.css, js/landing.js
+USAGE: All visitors to the platform
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
 ================================================================================
 -->
 
@@ -27,7 +29,14 @@ AFFECTED: All visitors to the platform
     <link rel="stylesheet" href="css/global.css" />
     <link rel="stylesheet" href="css/landing.css" />
 
-    <!-- External JS -->
+    <!-- Foundation Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/credentials.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/translations.js"></script>
+
+    <!-- Page-Specific Script -->
     <script src="js/landing.js"></script>
 </head>
 <body>
@@ -54,7 +63,7 @@ AFFECTED: All visitors to the platform
                     <span>sms.aviasafesystems.com</span>
                 </div>
                 <a href="dashboard-login.html" class="btn-login" style="background:rgba(255,255,255,0.1);border-color:#e8a838;">
-                <i class="fas fa-user-shield"></i> Safety Officer
+                    <i class="fas fa-user-shield"></i> Safety Officer
                 </a>
             </div>
         </header>
@@ -297,13 +306,27 @@ AFFECTED: All visitors to the platform
             const btn = document.getElementById('btnBegin');
             if (!btn) return;
 
-            // Show loading state
             btn.disabled = true;
             btn.innerHTML = `<span class="spinner"></span> Loading...`;
 
-            // Redirect to login page
-            const loginUrl = `login.html`;
+            // Check if already logged in
+            if (typeof getCurrentUser === 'function') {
+                const user = getCurrentUser();
+                if (user) {
+                    console.log('✅ User already logged in, redirecting...');
+                    const redirectMap = {
+                        'participant': 'survey/survey.html',
+                        'safety_officer': 'safety-dashboard.html',
+                        'caan': 'dashboard.html',
+                        'admin': 'admin.html'
+                    };
+                    const target = redirectMap[user.role] || 'dashboard.html';
+                    setTimeout(() => { window.location.href = target; }, 800);
+                    return;
+                }
+            }
 
+            const loginUrl = 'login.html';
             console.log(`🔗 Redirecting to: ${loginUrl}`);
 
             setTimeout(function() {
@@ -319,7 +342,7 @@ AFFECTED: All visitors to the platform
             ELEMENTS
         };
 
-        console.log('📋 Click "Start Your Gap Analysis" or "Tenant Login" to begin');
+        console.log('📋 Click "Start Your Gap Analysis" or "Safety Officer" to begin');
     </script>
 
 </body>

@@ -1,12 +1,17 @@
 /*
 ================================================================================
 FILE: SurveySMS/css/admin.css
-VERSION: 1.0
+VERSION: 1.0.0
 REVISION DATE: 2026-06-17
-PURPOSE: Admin panel specific styles
-AFFECTED: admin.html
+PURPOSE: Admin panel specific styles - action cards, login form, airlines list
+DEPENDENCIES: global.css
+USAGE: admin.html
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
 ================================================================================
 */
+
+/* [Your existing admin.css content - unchanged, only header updated] */
 
 /* ===== Admin Wrapper ===== */
 .admin-wrapper {

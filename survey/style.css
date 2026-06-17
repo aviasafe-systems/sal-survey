@@ -1,9 +1,19 @@
-/* ============================================================
-   Sita Air SMS – Stylesheet
-   Brand: Navy (#0D1B4A) · Gold (#D4A017) · Inter
-   ============================================================ */
+/*
+================================================================================
+FILE: SurveySMS/survey/style.css
+VERSION: 1.0.0
+REVISION DATE: 2026-06-17
+PURPOSE: Survey page specific styles - Sita Air branded, responsive, with animations
+DEPENDENCIES: None
+USAGE: survey/survey.html
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
+================================================================================
+*/
 
-/* ── Design Tokens ──────────────────────────────────────────────────── */
+/* [Your existing style.css content - unchanged, only header updated] */
+
+* ── Design Tokens ──────────────────────────────────────────────────── */
 
 :root {
   --sita-navy: #0D1B4A;

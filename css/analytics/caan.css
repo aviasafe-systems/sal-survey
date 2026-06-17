@@ -1,1 +1,363 @@
+/*
+================================================================================
+FILE: SurveySMS/css/analytics/caan.css
+VERSION: 1.0.0
+REVISION DATE: 2026-06-17
+PURPOSE: CAAN analytics specific styles - date filter, regulatory report, compliance summary
+DEPENDENCIES: shared.css
+USAGE: analytics/caan-analytics.html
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
+================================================================================
+*/
 
+/* ===== CAAN Analytics Specific Styles ===== */
+
+/* Date Filter */
+.date-filter {
+    background: white;
+    padding: 18px 25px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+    display: none;
+}
+
+.date-filter.visible { display: block; }
+
+.date-filter .filter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.date-filter .filter-label {
+    font-weight: 600;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.date-filter .filter-label i { color: var(--secondary); }
+
+.date-filter .filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.date-filter .filter-controls .date-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.date-filter .filter-controls .date-group label {
+    font-size: 0.7rem;
+    color: var(--gray-600);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.date-filter .filter-controls .date-group input {
+    padding: 6px 12px;
+    border: 2px solid var(--gray-200);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: var(--gray-100);
+    transition: var(--transition);
+}
+
+.date-filter .filter-controls .date-group input:focus {
+    border-color: var(--primary);
+    outline: none;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(10, 46, 74, 0.1);
+}
+
+.date-filter .filter-controls .btn-filter {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+    margin-top: 6px;
+    font-size: 0.9rem;
+}
+
+.date-filter .filter-controls .btn-filter:hover {
+    background: var(--primary-light);
+    transform: translateY(-2px);
+}
+
+.date-filter .filter-controls .btn-filter.clear {
+    background: var(--gray-600);
+}
+
+.date-filter .filter-controls .btn-filter.clear:hover {
+    background: #5a6268;
+}
+
+.date-filter .filter-status {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    margin-left: 5px;
+}
+
+.date-filter .filter-stats {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--gray-200);
+    font-size: 0.85rem;
+    color: #495057;
+}
+
+.date-filter .filter-stats .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.date-filter .filter-stats .stat-item .count {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+.date-filter .filter-stats .stat-item .count.green { color: var(--success); }
+.date-filter .filter-stats .stat-item .count.orange { color: var(--secondary); }
+.date-filter .filter-stats .stat-item .count.blue { color: var(--primary); }
+
+.date-filter .filter-stats .stat-item i.green { color: var(--success); }
+.date-filter .filter-stats .stat-item i.orange { color: var(--secondary); }
+.date-filter .filter-stats .stat-item i.blue { color: var(--primary); }
+
+.date-filter .preset-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.date-filter .preset-buttons .btn-preset {
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    padding: 4px 14px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: var(--transition);
+    color: #495057;
+}
+
+.date-filter .preset-buttons .btn-preset:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.date-filter .preset-buttons .btn-preset.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+/* Comparison Table */
+.comparison-table {
+    background: white;
+    padding: 25px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 25px;
+    overflow-x: auto;
+}
+
+.comparison-table h3 {
+    color: var(--primary);
+    margin-bottom: 15px;
+}
+.comparison-table h3 i { color: var(--secondary); }
+
+.comparison-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.comparison-table table th {
+    background: var(--primary);
+    color: white;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+}
+
+.comparison-table table td {
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.comparison-table table tr:hover td { background: var(--gray-100); }
+
+.comparison-table table .score-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.comparison-table table .score-badge.high { background: #d4edda; color: #155724; }
+.comparison-table table .score-badge.medium { background: #fff3cd; color: #856404; }
+.comparison-table table .score-badge.low { background: #f8d7da; color: #721c24; }
+
+.comparison-table .airline-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.comparison-table .airline-link:hover {
+    text-decoration: underline;
+    color: var(--secondary);
+}
+
+/* Regulatory Report */
+.regulatory-report {
+    background: white;
+    padding: 25px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 25px;
+}
+
+.regulatory-report h3 {
+    color: var(--primary);
+    margin-bottom: 20px;
+}
+.regulatory-report h3 i { color: var(--secondary); }
+
+.regulatory-report .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.regulatory-report .summary-item {
+    background: var(--gray-100);
+    padding: 15px;
+    border-radius: var(--radius);
+    text-align: center;
+}
+
+.regulatory-report .summary-item .number {
+    font-size: 2rem;
+    font-weight: 700;
+}
+.regulatory-report .summary-item .number.green { color: var(--success); }
+.regulatory-report .summary-item .number.orange { color: var(--warning); }
+.regulatory-report .summary-item .number.red { color: var(--danger); }
+.regulatory-report .summary-item .number.blue { color: var(--primary); }
+
+.regulatory-report .summary-item .label {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+}
+
+.regulatory-report .avg-score {
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary);
+    margin: 15px 0;
+}
+
+.regulatory-report .issue-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+}
+
+.regulatory-report .issue-list li {
+    padding: 12px 15px;
+    background: var(--gray-100);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.regulatory-report .issue-list li strong {
+    color: var(--primary);
+    min-width: 200px;
+}
+
+.regulatory-report .issue-list li .affected {
+    background: var(--secondary-light);
+    color: var(--primary);
+    padding: 2px 10px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.regulatory-report .issue-list li .airlines {
+    font-size: 0.8rem;
+    color: var(--gray-600);
+    flex: 1;
+}
+
+.regulatory-report .recommendations-box {
+    background: #e8f4f8;
+    padding: 20px;
+    border-radius: var(--radius);
+    margin-top: 20px;
+    border-left: 4px solid var(--primary);
+}
+
+.regulatory-report .recommendations-box h4 {
+    color: var(--primary);
+    margin-bottom: 12px;
+}
+
+.regulatory-report .recommendations-box ul {
+    list-style: none;
+    padding: 0;
+}
+
+.regulatory-report .recommendations-box ul li {
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .date-filter .filter-header { flex-direction: column; align-items: stretch; }
+    .date-filter .filter-controls { flex-direction: column; align-items: stretch; }
+    .date-filter .filter-controls .date-group input { width: 100%; }
+    .date-filter .filter-stats { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .comparison-table table { font-size: 0.75rem; }
+    .comparison-table table th, .comparison-table table td { padding: 8px 10px; }
+    .regulatory-report .issue-list li { flex-direction: column; align-items: flex-start; }
+    .regulatory-report .issue-list li strong { min-width: auto; }
+}
+
+@media print {
+    .date-filter { display: none !important; }
+}

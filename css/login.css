@@ -1,12 +1,17 @@
 /*
 ================================================================================
 FILE: SurveySMS/css/login.css
-VERSION: 1.0
+VERSION: 1.0.0
 REVISION DATE: 2026-06-17
-PURPOSE: Login page specific styles
-AFFECTED: login.html
+PURPOSE: Login page specific styles with form styling
+DEPENDENCIES: global.css
+USAGE: login.html
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
 ================================================================================
 */
+
+/* [Your existing login.css content - unchanged, only header updated] */
 
 /* ===== Login Container ===== */
 .login-wrapper {

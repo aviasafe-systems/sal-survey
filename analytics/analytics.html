@@ -1,11 +1,13 @@
 <!--
 ================================================================================
 FILE: SurveySMS/analytics/analytics.html
-VERSION: 8.0
-REVISION DATE: 2026-06-16
-PURPOSE: Analytics dashboard showing SMS gap analysis with charts and reports
-REVISED PURPOSE: Added CAAN date filter for survey period tracking and compliance monitoring
-AFFECTED: CAAN users viewing consolidated analytics
+VERSION: 1.0.0
+REVISION DATE: 2026-06-17
+PURPOSE: Analytics dashboard showing SMS gap analysis with charts, reports, and CAAN date filter for survey period tracking
+DEPENDENCIES: ../css/global.css, ../css/analytics/shared.css, ../js/utils.js, ../js/credentials.js, ../js/storage.js, ../js/auth.js, ../js/translations.js, ../js/analytics/data-utils.js, ../js/analytics/chart-utils.js, ../js/analytics/export-utils.js, Chart.js (CDN), html2pdf (CDN)
+USAGE: CAAN users viewing consolidated analytics, redirects based on role
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
 ================================================================================
 -->
 
@@ -15,31 +17,54 @@ AFFECTED: CAAN users viewing consolidated analytics
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Analytics Dashboard - SMS Gap Analysis</title>
-    
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    
+
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
     </script>
-    
+
     <!-- html2pdf for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js">
     </script>
-    
+
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/analytics/shared.css" />
+
+    <!-- Foundation Scripts (Always First) -->
+    <script src="../js/utils.js"></script>
+    <script src="../js/credentials.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/translations.js"></script>
+
+    <!-- Analytics Scripts -->
+    <script src="../js/analytics/data-utils.js"></script>
+    <script src="../js/analytics/chart-utils.js"></script>
+    <script src="../js/analytics/export-utils.js"></script>
+
     <style>
         /* ===== CSS Variables & Reset ===== */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f5f7fa;
             min-height: 100vh;
             padding: 20px;
         }
-        
-        .analytics-container { max-width: 1400px; margin: 0 auto; }
-        
+
+        .analytics-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
         /* ===== Header ===== */
         .analytics-header {
             background: linear-gradient(135deg, #0a2e4a, #1a4a6a);
@@ -53,21 +78,23 @@ AFFECTED: CAAN users viewing consolidated analytics
             flex-wrap: wrap;
             gap: 15px;
         }
-        
+
         .analytics-header h1 {
             font-size: 1.8rem;
             display: flex;
             align-items: center;
             gap: 12px;
         }
-        
-        .analytics-header h1 i { color: #e8a838; }
-        
+
+        .analytics-header h1 i {
+            color: #e8a838;
+        }
+
         .analytics-header .subtitle {
             font-size: 0.9rem;
             opacity: 0.8;
         }
-        
+
         .analytics-header .badge {
             background: #e8a838;
             color: #0a2e4a;
@@ -76,7 +103,7 @@ AFFECTED: CAAN users viewing consolidated analytics
             font-weight: 600;
             font-size: 0.85rem;
         }
-        
+
         .btn-back {
             background: rgba(255, 255, 255, 0.15);
             color: white;
@@ -90,38 +117,48 @@ AFFECTED: CAAN users viewing consolidated analytics
             gap: 8px;
             font-size: 0.95rem;
         }
-        
-        .btn-back:hover { background: rgba(255, 255, 255, 0.25); }
-        
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
         /* ===== Role Banner ===== */
         .role-banner {
             background: white;
             padding: 12px 25px;
             border-radius: 12px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 10px;
         }
-        
+
         .role-banner .role-info {
             display: flex;
             align-items: center;
             gap: 12px;
         }
-        
-        .role-banner .role-info .role-icon { font-size: 1.5rem; color: #e8a838; }
-        .role-banner .role-info .role-text { font-weight: 600; color: #0a2e4a; }
+
+        .role-banner .role-info .role-icon {
+            font-size: 1.5rem;
+            color: #e8a838;
+        }
+
+        .role-banner .role-info .role-text {
+            font-weight: 600;
+            color: #0a2e4a;
+        }
+
         .role-banner .role-info .role-text small {
             font-weight: 400;
             color: #6c757d;
             font-size: 0.85rem;
             display: block;
         }
-        
+
         .role-badge {
             padding: 4px 14px;
             border-radius: 50px;
@@ -129,25 +166,40 @@ AFFECTED: CAAN users viewing consolidated analytics
             font-weight: 700;
             text-transform: uppercase;
         }
-        .role-badge.airline { background: #d4edda; color: #155724; }
-        .role-badge.caan { background: #cce5ff; color: #004085; }
-        .role-badge.admin { background: #f8d7da; color: #721c24; }
-        
+
+        .role-badge.airline {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .role-badge.caan {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .role-badge.admin {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
         /* ===== Admin Toggle ===== */
         .admin-toggle {
             background: white;
             padding: 15px 25px;
             border-radius: 12px;
             margin-bottom: 25px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             display: none;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 15px;
         }
-        .admin-toggle.visible { display: flex; }
-        
+
+        .admin-toggle.visible {
+            display: flex;
+        }
+
         .admin-toggle .toggle-label {
             font-weight: 600;
             color: #0a2e4a;
@@ -155,14 +207,18 @@ AFFECTED: CAAN users viewing consolidated analytics
             align-items: center;
             gap: 10px;
         }
-        .admin-toggle .toggle-label i { color: #e8a838; }
-        
+
+        .admin-toggle .toggle-label i {
+            color: #e8a838;
+        }
+
         .admin-toggle .airline-selector {
             display: flex;
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
         }
+
         .admin-toggle .airline-selector select {
             padding: 8px 15px;
             border: 2px solid #e9ecef;
@@ -171,10 +227,12 @@ AFFECTED: CAAN users viewing consolidated analytics
             background: white;
             min-width: 200px;
         }
+
         .admin-toggle .airline-selector select:focus {
             border-color: #0a2e4a;
             outline: none;
         }
+
         .admin-toggle .airline-selector .btn-filter {
             background: #0a2e4a;
             color: white;
@@ -185,23 +243,26 @@ AFFECTED: CAAN users viewing consolidated analytics
             font-weight: 600;
             transition: all 0.3s ease;
         }
+
         .admin-toggle .airline-selector .btn-filter:hover {
             background: #1a4a6a;
             transform: translateY(-2px);
         }
-        
+
         /* ===== CAAN Date Filter ===== */
         .date-filter {
             background: white;
             padding: 18px 25px;
             border-radius: 12px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             display: none;
         }
-        
-        .date-filter.visible { display: block; }
-        
+
+        .date-filter.visible {
+            display: block;
+        }
+
         .date-filter .filter-header {
             display: flex;
             align-items: center;
@@ -209,7 +270,7 @@ AFFECTED: CAAN users viewing consolidated analytics
             flex-wrap: wrap;
             gap: 15px;
         }
-        
+
         .date-filter .filter-label {
             font-weight: 600;
             color: #0a2e4a;
@@ -217,21 +278,23 @@ AFFECTED: CAAN users viewing consolidated analytics
             align-items: center;
             gap: 10px;
         }
-        
-        .date-filter .filter-label i { color: #e8a838; }
-        
+
+        .date-filter .filter-label i {
+            color: #e8a838;
+        }
+
         .date-filter .filter-controls {
             display: flex;
             align-items: center;
             gap: 15px;
             flex-wrap: wrap;
         }
-        
+
         .date-filter .filter-controls .date-group {
             display: flex;
             flex-direction: column;
         }
-        
+
         .date-filter .filter-controls .date-group label {
             font-size: 0.7rem;
             color: #6c757d;
@@ -239,7 +302,7 @@ AFFECTED: CAAN users viewing consolidated analytics
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
+
         .date-filter .filter-controls .date-group input {
             padding: 6px 12px;
             border: 2px solid #e9ecef;
@@ -248,14 +311,14 @@ AFFECTED: CAAN users viewing consolidated analytics
             background: #f8f9fa;
             transition: all 0.3s ease;
         }
-        
+
         .date-filter .filter-controls .date-group input:focus {
             border-color: #0a2e4a;
             outline: none;
             background: white;
             box-shadow: 0 0 0 3px rgba(10, 46, 74, 0.1);
         }
-        
+
         .date-filter .filter-controls .btn-filter {
             background: #0a2e4a;
             color: white;
@@ -268,26 +331,26 @@ AFFECTED: CAAN users viewing consolidated analytics
             margin-top: 6px;
             font-size: 0.9rem;
         }
-        
+
         .date-filter .filter-controls .btn-filter:hover {
             background: #1a4a6a;
             transform: translateY(-2px);
         }
-        
+
         .date-filter .filter-controls .btn-filter.clear {
             background: #6c757d;
         }
-        
+
         .date-filter .filter-controls .btn-filter.clear:hover {
             background: #5a6268;
         }
-        
+
         .date-filter .filter-status {
             font-size: 0.85rem;
             color: #6c757d;
             margin-left: 5px;
         }
-        
+
         .date-filter .filter-stats {
             display: flex;
             align-items: center;
@@ -299,36 +362,54 @@ AFFECTED: CAAN users viewing consolidated analytics
             font-size: 0.85rem;
             color: #495057;
         }
-        
+
         .date-filter .filter-stats .stat-item {
             display: flex;
             align-items: center;
             gap: 6px;
         }
-        
+
         .date-filter .filter-stats .stat-item .count {
             font-weight: 700;
             font-size: 1.1rem;
         }
-        
-        .date-filter .filter-stats .stat-item .count.green { color: #28a745; }
-        .date-filter .filter-stats .stat-item .count.orange { color: #e8a838; }
-        .date-filter .filter-stats .stat-item .count.red { color: #dc3545; }
-        .date-filter .filter-stats .stat-item .count.blue { color: #0a2e4a; }
-        
-        .date-filter .filter-stats .stat-item i { font-size: 0.9rem; }
-        .date-filter .filter-stats .stat-item i.green { color: #28a745; }
-        .date-filter .filter-stats .stat-item i.orange { color: #e8a838; }
-        .date-filter .filter-stats .stat-item i.red { color: #dc3545; }
-        .date-filter .filter-stats .stat-item i.blue { color: #0a2e4a; }
-        
+
+        .date-filter .filter-stats .stat-item .count.green {
+            color: #28a745;
+        }
+        .date-filter .filter-stats .stat-item .count.orange {
+            color: #e8a838;
+        }
+        .date-filter .filter-stats .stat-item .count.red {
+            color: #dc3545;
+        }
+        .date-filter .filter-stats .stat-item .count.blue {
+            color: #0a2e4a;
+        }
+
+        .date-filter .filter-stats .stat-item i {
+            font-size: 0.9rem;
+        }
+        .date-filter .filter-stats .stat-item i.green {
+            color: #28a745;
+        }
+        .date-filter .filter-stats .stat-item i.orange {
+            color: #e8a838;
+        }
+        .date-filter .filter-stats .stat-item i.red {
+            color: #dc3545;
+        }
+        .date-filter .filter-stats .stat-item i.blue {
+            color: #0a2e4a;
+        }
+
         .date-filter .preset-buttons {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
             margin-top: 10px;
         }
-        
+
         .date-filter .preset-buttons .btn-preset {
             background: #f8f9fa;
             border: 1px solid #e9ecef;
@@ -339,19 +420,19 @@ AFFECTED: CAAN users viewing consolidated analytics
             transition: all 0.3s ease;
             color: #495057;
         }
-        
+
         .date-filter .preset-buttons .btn-preset:hover {
             background: #0a2e4a;
             color: white;
             border-color: #0a2e4a;
         }
-        
+
         .date-filter .preset-buttons .btn-preset.active {
             background: #0a2e4a;
             color: white;
             border-color: #0a2e4a;
         }
-        
+
         /* ===== Stats Grid ===== */
         .stats-grid {
             display: grid;
@@ -359,51 +440,81 @@ AFFECTED: CAAN users viewing consolidated analytics
             gap: 15px;
             margin-bottom: 25px;
         }
+
         .stat-card {
             background: white;
             padding: 18px;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             text-align: center;
             transition: all 0.3s ease;
         }
+
         .stat-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
         }
-        .stat-card .number { font-size: 2rem; font-weight: 700; color: #0a2e4a; }
-        .stat-card .label { color: #6c757d; font-size: 0.8rem; margin-top: 5px; }
-        .stat-card .icon { font-size: 1.3rem; color: #e8a838; margin-bottom: 5px; }
-        .stat-card.green .number { color: #28a745; }
-        .stat-card.red .number { color: #dc3545; }
-        .stat-card.orange .number { color: #fd7e14; }
-        .stat-card.blue .number { color: #0a2e4a; }
-        
+
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0a2e4a;
+        }
+
+        .stat-card .label {
+            color: #6c757d;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+
+        .stat-card .icon {
+            font-size: 1.3rem;
+            color: #e8a838;
+            margin-bottom: 5px;
+        }
+
+        .stat-card.green .number {
+            color: #28a745;
+        }
+        .stat-card.red .number {
+            color: #dc3545;
+        }
+        .stat-card.orange .number {
+            color: #fd7e14;
+        }
+        .stat-card.blue .number {
+            color: #0a2e4a;
+        }
+
         /* ===== Pillar Summary with Pie Chart ===== */
         .pillar-summary-wrapper {
             display: flex;
             gap: 25px;
             margin-bottom: 25px;
         }
+
         .pillar-summary-left {
             flex: 0 0 60%;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
         }
+
         .pillar-summary-right {
             flex: 0 0 40%;
         }
+
         .pillar-chart-card {
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
         }
+
         .pillar-chart-card h3 {
             color: #0a2e4a;
             margin-bottom: 15px;
@@ -414,7 +525,11 @@ AFFECTED: CAAN users viewing consolidated analytics
             text-align: center;
             justify-content: center;
         }
-        .pillar-chart-card h3 i { color: #e8a838; }
+
+        .pillar-chart-card h3 i {
+            color: #e8a838;
+        }
+
         .pillar-chart-card .chart-container {
             position: relative;
             height: 220px;
@@ -422,6 +537,7 @@ AFFECTED: CAAN users viewing consolidated analytics
             max-width: 280px;
             margin: 0 auto;
         }
+
         .pillar-legend {
             display: flex;
             justify-content: center;
@@ -429,6 +545,7 @@ AFFECTED: CAAN users viewing consolidated analytics
             flex-wrap: wrap;
             margin-top: 15px;
         }
+
         .pillar-legend .legend-item {
             display: flex;
             align-items: center;
@@ -436,38 +553,65 @@ AFFECTED: CAAN users viewing consolidated analytics
             font-size: 0.8rem;
             color: #495057;
         }
+
         .pillar-legend .legend-item .color-box {
             width: 14px;
             height: 14px;
             border-radius: 4px;
             flex-shrink: 0;
         }
-        .pillar-legend .legend-item .score { font-weight: 700; color: #0a2e4a; }
-        
+
+        .pillar-legend .legend-item .score {
+            font-weight: 700;
+            color: #0a2e4a;
+        }
+
         .pillar-card {
             background: white;
             padding: 18px;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             border-top: 5px solid #0a2e4a;
             transition: all 0.3s ease;
         }
+
         .pillar-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
         }
+
         .pillar-card .pillar-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
         }
-        .pillar-card .pillar-header h4 { color: #0a2e4a; font-size: 0.95rem; }
-        .pillar-card .pillar-header .pillar-score { font-size: 1.4rem; font-weight: 700; }
-        .pillar-card .pillar-header .pillar-score.good { color: #28a745; }
-        .pillar-card .pillar-header .pillar-score.average { color: #fd7e14; }
-        .pillar-card .pillar-header .pillar-score.poor { color: #dc3545; }
-        .pillar-card .pillar-elements { font-size: 0.8rem; color: #6c757d; }
+
+        .pillar-card .pillar-header h4 {
+            color: #0a2e4a;
+            font-size: 0.95rem;
+        }
+
+        .pillar-card .pillar-header .pillar-score {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .pillar-card .pillar-header .pillar-score.good {
+            color: #28a745;
+        }
+        .pillar-card .pillar-header .pillar-score.average {
+            color: #fd7e14;
+        }
+        .pillar-card .pillar-header .pillar-score.poor {
+            color: #dc3545;
+        }
+
+        .pillar-card .pillar-elements {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
         .pillar-card .pillar-elements span {
             display: inline-block;
             background: #f8f9fa;
@@ -476,6 +620,7 @@ AFFECTED: CAAN users viewing consolidated analytics
             margin: 2px;
             font-size: 0.7rem;
         }
+
         .pillar-card .pillar-status {
             margin-top: 8px;
             padding: 6px 12px;
@@ -484,23 +629,43 @@ AFFECTED: CAAN users viewing consolidated analytics
             font-weight: 600;
             text-align: center;
         }
-        .pillar-card .pillar-status.strong { background: #d4edda; color: #155724; }
-        .pillar-card .pillar-status.moderate { background: #fff3cd; color: #856404; }
-        .pillar-card .pillar-status.weak { background: #f8d7da; color: #721c24; }
-        .pillar-card.pillar-policy { border-top-color: #2e7daf; }
-        .pillar-card.pillar-risk { border-top-color: #e8a838; }
-        .pillar-card.pillar-assurance { border-top-color: #28a745; }
-        .pillar-card.pillar-promotion { border-top-color: #dc3545; }
-        
+
+        .pillar-card .pillar-status.strong {
+            background: #d4edda;
+            color: #155724;
+        }
+        .pillar-card .pillar-status.moderate {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .pillar-card .pillar-status.weak {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .pillar-card.pillar-policy {
+            border-top-color: #2e7daf;
+        }
+        .pillar-card.pillar-risk {
+            border-top-color: #e8a838;
+        }
+        .pillar-card.pillar-assurance {
+            border-top-color: #28a745;
+        }
+        .pillar-card.pillar-promotion {
+            border-top-color: #dc3545;
+        }
+
         /* ===== Comparison Table ===== */
         .comparison-table {
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             margin-bottom: 25px;
             overflow-x: auto;
         }
+
         .comparison-table h3 {
             color: #0a2e4a;
             margin-bottom: 15px;
@@ -508,12 +673,17 @@ AFFECTED: CAAN users viewing consolidated analytics
             align-items: center;
             gap: 10px;
         }
-        .comparison-table h3 i { color: #e8a838; }
+
+        .comparison-table h3 i {
+            color: #e8a838;
+        }
+
         .comparison-table table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9rem;
         }
+
         .comparison-table table th {
             background: #0a2e4a;
             color: white;
@@ -521,11 +691,16 @@ AFFECTED: CAAN users viewing consolidated analytics
             text-align: left;
             font-weight: 600;
         }
+
         .comparison-table table td {
             padding: 10px 15px;
             border-bottom: 1px solid #e9ecef;
         }
-        .comparison-table table tr:hover td { background: #f8f9fa; }
+
+        .comparison-table table tr:hover td {
+            background: #f8f9fa;
+        }
+
         .comparison-table table .score-badge {
             display: inline-block;
             padding: 2px 10px;
@@ -533,19 +708,31 @@ AFFECTED: CAAN users viewing consolidated analytics
             font-weight: 600;
             font-size: 0.8rem;
         }
-        .comparison-table table .score-badge.high { background: #d4edda; color: #155724; }
-        .comparison-table table .score-badge.medium { background: #fff3cd; color: #856404; }
-        .comparison-table table .score-badge.low { background: #f8d7da; color: #721c24; }
+
+        .comparison-table table .score-badge.high {
+            background: #d4edda;
+            color: #155724;
+        }
+        .comparison-table table .score-badge.medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .comparison-table table .score-badge.low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
         .comparison-table .airline-link {
             color: #0a2e4a;
             text-decoration: none;
             font-weight: 600;
         }
+
         .comparison-table .airline-link:hover {
             text-decoration: underline;
             color: #e8a838;
         }
-        
+
         /* ===== Charts Grid ===== */
         .charts-grid {
             display: grid;
@@ -553,12 +740,14 @@ AFFECTED: CAAN users viewing consolidated analytics
             gap: 25px;
             margin-bottom: 25px;
         }
+
         .chart-card {
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
+
         .chart-card h3 {
             color: #0a2e4a;
             margin-bottom: 15px;
@@ -567,17 +756,25 @@ AFFECTED: CAAN users viewing consolidated analytics
             align-items: center;
             gap: 10px;
         }
-        .chart-card h3 i { color: #e8a838; }
-        .chart-card .chart-container { position: relative; height: 280px; }
-        
+
+        .chart-card h3 i {
+            color: #e8a838;
+        }
+
+        .chart-card .chart-container {
+            position: relative;
+            height: 280px;
+        }
+
         /* ===== Gap Analysis ===== */
         .gap-analysis {
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             margin-bottom: 25px;
         }
+
         .gap-analysis h3 {
             color: #0a2e4a;
             margin-bottom: 20px;
@@ -585,12 +782,17 @@ AFFECTED: CAAN users viewing consolidated analytics
             align-items: center;
             gap: 10px;
         }
-        .gap-analysis h3 i { color: #e8a838; }
+
+        .gap-analysis h3 i {
+            color: #e8a838;
+        }
+
         .gap-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 15px;
         }
+
         .gap-item {
             background: #f8f9fa;
             padding: 15px 20px;
@@ -600,46 +802,83 @@ AFFECTED: CAAN users viewing consolidated analytics
             justify-content: space-between;
             align-items: center;
         }
-        .gap-item.critical { border-left-color: #dc3545; background: #fdf2f2; }
-        .gap-item.moderate { border-left-color: #fd7e14; background: #fef9f0; }
-        .gap-item.minor { border-left-color: #ffc107; background: #fffcf0; }
-        .gap-item.compliant { border-left-color: #28a745; background: #d4edda; }
+
+        .gap-item.critical {
+            border-left-color: #dc3545;
+            background: #fdf2f2;
+        }
+        .gap-item.moderate {
+            border-left-color: #fd7e14;
+            background: #fef9f0;
+        }
+        .gap-item.minor {
+            border-left-color: #ffc107;
+            background: #fffcf0;
+        }
+        .gap-item.compliant {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
         .gap-item .element-name {
             font-weight: 600;
             color: #0a2e4a;
             font-size: 0.9rem;
         }
+
         .gap-item .element-name .pillar-tag {
             font-weight: 400;
             font-size: 0.65rem;
             color: #6c757d;
             display: block;
         }
+
         .gap-item .score {
             display: flex;
             align-items: center;
             gap: 10px;
         }
-        .gap-item .score .current { font-weight: 700; font-size: 1rem; color: #0a2e4a; }
-        .gap-item .score .target { color: #6c757d; font-size: 0.8rem; }
+
+        .gap-item .score .current {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #0a2e4a;
+        }
+
+        .gap-item .score .target {
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
+
         .gap-item .score .gap-value {
             font-weight: 700;
             font-size: 0.9rem;
             padding: 2px 10px;
             border-radius: 50px;
         }
-        .gap-item .score .gap-value.positive { color: #28a745; background: #d4edda; }
-        .gap-item .score .gap-value.negative { color: #dc3545; background: #f8d7da; }
-        .gap-item .score .gap-value.neutral { color: #fd7e14; background: #fff3cd; }
-        
+
+        .gap-item .score .gap-value.positive {
+            color: #28a745;
+            background: #d4edda;
+        }
+        .gap-item .score .gap-value.negative {
+            color: #dc3545;
+            background: #f8d7da;
+        }
+        .gap-item .score .gap-value.neutral {
+            color: #fd7e14;
+            background: #fff3cd;
+        }
+
         /* ===== CAP Section ===== */
         .cap-section {
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             margin-bottom: 25px;
         }
+
         .cap-section h3 {
             color: #0a2e4a;
             margin-bottom: 10px;
@@ -647,17 +886,23 @@ AFFECTED: CAAN users viewing consolidated analytics
             align-items: center;
             gap: 10px;
         }
-        .cap-section h3 i { color: #e8a838; }
+
+        .cap-section h3 i {
+            color: #e8a838;
+        }
+
         .cap-section .cap-intro {
             color: #6c757d;
             font-size: 0.95rem;
             margin-bottom: 20px;
         }
+
         .cap-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 20px;
         }
+
         .cap-item {
             background: #f8f9fa;
             padding: 18px;
@@ -665,19 +910,29 @@ AFFECTED: CAAN users viewing consolidated analytics
             border-left: 5px solid #0a2e4a;
             transition: all 0.3s ease;
         }
+
         .cap-item:hover {
             transform: translateX(5px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
         }
-        .cap-item.priority-high { border-left-color: #dc3545; }
-        .cap-item.priority-medium { border-left-color: #fd7e14; }
-        .cap-item.priority-low { border-left-color: #28a745; }
+
+        .cap-item.priority-high {
+            border-left-color: #dc3545;
+        }
+        .cap-item.priority-medium {
+            border-left-color: #fd7e14;
+        }
+        .cap-item.priority-low {
+            border-left-color: #28a745;
+        }
+
         .cap-item .cap-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 6px;
         }
+
         .cap-item .cap-header .cap-pillar {
             font-size: 0.65rem;
             font-weight: 600;
@@ -686,26 +941,40 @@ AFFECTED: CAAN users viewing consolidated analytics
             background: #e9ecef;
             color: #495057;
         }
+
         .cap-item .cap-header .cap-priority {
             font-size: 0.65rem;
             font-weight: 700;
             padding: 2px 10px;
             border-radius: 50px;
         }
-        .cap-item .cap-header .cap-priority.high { background: #dc3545; color: white; }
-        .cap-item .cap-header .cap-priority.medium { background: #fd7e14; color: white; }
-        .cap-item .cap-header .cap-priority.low { background: #28a745; color: white; }
+
+        .cap-item .cap-header .cap-priority.high {
+            background: #dc3545;
+            color: white;
+        }
+        .cap-item .cap-header .cap-priority.medium {
+            background: #fd7e14;
+            color: white;
+        }
+        .cap-item .cap-header .cap-priority.low {
+            background: #28a745;
+            color: white;
+        }
+
         .cap-item .cap-title {
             font-weight: 600;
             color: #0a2e4a;
             font-size: 0.95rem;
             margin-bottom: 4px;
         }
+
         .cap-item .cap-current {
             font-size: 0.8rem;
             color: #6c757d;
             margin-bottom: 6px;
         }
+
         .cap-item .cap-action {
             background: white;
             padding: 10px 15px;
@@ -714,16 +983,21 @@ AFFECTED: CAAN users viewing consolidated analytics
             color: #0a2e4a;
             border: 1px solid #e9ecef;
         }
-        .cap-item .cap-action i { color: #e8a838; margin-right: 8px; }
-        
+
+        .cap-item .cap-action i {
+            color: #e8a838;
+            margin-right: 8px;
+        }
+
         /* ===== Recommendations ===== */
         .recommendations {
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             margin-bottom: 25px;
         }
+
         .recommendations h3 {
             color: #0a2e4a;
             margin-bottom: 20px;
@@ -731,7 +1005,11 @@ AFFECTED: CAAN users viewing consolidated analytics
             align-items: center;
             gap: 10px;
         }
-        .recommendations h3 i { color: #e8a838; }
+
+        .recommendations h3 i {
+            color: #e8a838;
+        }
+
         .recommendation-item {
             display: flex;
             align-items: flex-start;
@@ -742,7 +1020,11 @@ AFFECTED: CAAN users viewing consolidated analytics
             margin-bottom: 12px;
             transition: all 0.3s ease;
         }
-        .recommendation-item:hover { background: #e9ecef; }
+
+        .recommendation-item:hover {
+            background: #e9ecef;
+        }
+
         .recommendation-item .priority {
             width: 32px;
             height: 32px;
@@ -754,34 +1036,54 @@ AFFECTED: CAAN users viewing consolidated analytics
             font-size: 0.85rem;
             flex-shrink: 0;
         }
-        .recommendation-item .priority.high { background: #dc3545; color: white; }
-        .recommendation-item .priority.medium { background: #fd7e14; color: white; }
-        .recommendation-item .priority.low { background: #28a745; color: white; }
-        .recommendation-item .content { flex: 1; }
+
+        .recommendation-item .priority.high {
+            background: #dc3545;
+            color: white;
+        }
+        .recommendation-item .priority.medium {
+            background: #fd7e14;
+            color: white;
+        }
+        .recommendation-item .priority.low {
+            background: #28a745;
+            color: white;
+        }
+
+        .recommendation-item .content {
+            flex: 1;
+        }
+
         .recommendation-item .content .title {
             font-weight: 600;
             color: #0a2e4a;
             margin-bottom: 4px;
         }
+
         .recommendation-item .content .description {
             color: #6c757d;
             font-size: 0.9rem;
         }
+
         .recommendation-item .content .meta {
             font-size: 0.8rem;
             color: #6c757d;
             margin-top: 4px;
         }
-        .recommendation-item .content .meta i { margin-right: 4px; }
-        
+
+        .recommendation-item .content .meta i {
+            margin-right: 4px;
+        }
+
         /* ===== Timeline ===== */
         .timeline {
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             margin-bottom: 25px;
         }
+
         .timeline h3 {
             color: #0a2e4a;
             margin-bottom: 20px;
@@ -789,7 +1091,11 @@ AFFECTED: CAAN users viewing consolidated analytics
             align-items: center;
             gap: 10px;
         }
-        .timeline h3 i { color: #e8a838; }
+
+        .timeline h3 i {
+            color: #e8a838;
+        }
+
         .timeline-items {
             display: flex;
             justify-content: space-between;
@@ -797,6 +1103,7 @@ AFFECTED: CAAN users viewing consolidated analytics
             position: relative;
             padding: 20px 0;
         }
+
         .timeline-items::before {
             content: '';
             position: absolute;
@@ -807,6 +1114,7 @@ AFFECTED: CAAN users viewing consolidated analytics
             background: #e9ecef;
             transform: translateY(-50%);
         }
+
         .timeline-item {
             display: flex;
             flex-direction: column;
@@ -816,6 +1124,7 @@ AFFECTED: CAAN users viewing consolidated analytics
             z-index: 1;
             flex: 1;
         }
+
         .timeline-item .circle {
             width: 40px;
             height: 40px;
@@ -830,37 +1139,48 @@ AFFECTED: CAAN users viewing consolidated analytics
             color: #6c757d;
             transition: all 0.3s ease;
         }
+
         .timeline-item .circle.completed {
             border-color: #28a745;
             background: #28a745;
             color: white;
         }
+
         .timeline-item .circle.in-progress {
             border-color: #e8a838;
             background: #e8a838;
             color: white;
             animation: pulse 1.5s infinite;
         }
+
         .timeline-item .circle.locked {
             border-color: #dee2e6;
             background: #f8f9fa;
             color: #adb5bd;
         }
+
         .timeline-item .label {
             font-size: 0.75rem;
             color: #6c757d;
             text-align: center;
         }
+
         .timeline-item .label .session-num {
             font-weight: 700;
             color: #0a2e4a;
             display: block;
         }
+
         @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
         }
-        
+
         /* ===== Export Buttons ===== */
         .export-section {
             display: flex;
@@ -869,6 +1189,7 @@ AFFECTED: CAAN users viewing consolidated analytics
             justify-content: center;
             margin-top: 20px;
         }
+
         .btn-export {
             padding: 12px 30px;
             border: none;
@@ -881,27 +1202,48 @@ AFFECTED: CAAN users viewing consolidated analytics
             gap: 10px;
             font-size: 1rem;
         }
+
         .btn-export:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
         }
-        .btn-export.pdf { background: #dc3545; color: white; }
-        .btn-export.excel { background: #28a745; color: white; }
-        .btn-export.print { background: #0a2e4a; color: white; }
-        
+
+        .btn-export.pdf {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-export.excel {
+            background: #28a745;
+            color: white;
+        }
+        .btn-export.print {
+            background: #0a2e4a;
+            color: white;
+        }
+
         /* ===== No Data ===== */
         .no-data {
             text-align: center;
             padding: 50px 20px;
         }
+
         .no-data i {
             font-size: 4rem;
             color: #e8a838;
             margin-bottom: 20px;
             display: block;
         }
-        .no-data h2 { color: #0a2e4a; margin-bottom: 10px; }
-        .no-data p { color: #6c757d; font-size: 1rem; }
+
+        .no-data h2 {
+            color: #0a2e4a;
+            margin-bottom: 10px;
+        }
+
+        .no-data p {
+            color: #6c757d;
+            font-size: 1rem;
+        }
+
         .no-data .btn-primary {
             background: #0a2e4a;
             color: white;
@@ -916,66 +1258,178 @@ AFFECTED: CAAN users viewing consolidated analytics
             align-items: center;
             gap: 10px;
         }
+
         .no-data .btn-primary:hover {
             background: #1a4a6a;
             transform: translateY(-2px);
         }
-        
+
         /* ===== Responsive ===== */
         @media (max-width: 1200px) {
-            .pillar-summary-left { flex: 0 0 55%; }
-            .pillar-summary-right { flex: 0 0 45%; }
+            .pillar-summary-left {
+                flex: 0 0 55%;
+            }
+            .pillar-summary-right {
+                flex: 0 0 45%;
+            }
         }
+
         @media (max-width: 992px) {
-            .pillar-summary-wrapper { flex-direction: column; }
-            .pillar-summary-left { flex: 1; grid-template-columns: 1fr 1fr; }
-            .pillar-summary-right { flex: 1; }
-            .pillar-chart-card .chart-container { height: 200px; max-width: 240px; }
-            .charts-grid { grid-template-columns: 1fr; }
+            .pillar-summary-wrapper {
+                flex-direction: column;
+            }
+            .pillar-summary-left {
+                flex: 1;
+                grid-template-columns: 1fr 1fr;
+            }
+            .pillar-summary-right {
+                flex: 1;
+            }
+            .pillar-chart-card .chart-container {
+                height: 200px;
+                max-width: 240px;
+            }
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
         }
+
         @media (max-width: 768px) {
-            .analytics-header { flex-direction: column; text-align: center; padding: 20px; }
-            .analytics-header h1 { font-size: 1.4rem; flex-direction: column; }
-            .stats-grid { grid-template-columns: 1fr 1fr; }
-            .pillar-summary-left { grid-template-columns: 1fr; }
-            .gap-grid { grid-template-columns: 1fr; }
-            .cap-grid { grid-template-columns: 1fr; }
-            .timeline-items { flex-direction: column; gap: 15px; }
-            .timeline-items::before { display: none; }
-            .timeline-item { flex-direction: row; width: 100%; justify-content: flex-start; gap: 15px; }
-            .export-section { flex-direction: column; align-items: center; }
-            .btn-export { width: 100%; justify-content: center; }
-            .admin-toggle { flex-direction: column; align-items: stretch; }
-            .admin-toggle .airline-selector { flex-direction: column; }
-            .admin-toggle .airline-selector select { width: 100%; }
-            .comparison-table table { font-size: 0.75rem; }
-            .comparison-table table th, .comparison-table table td { padding: 8px 10px; }
-            .role-banner { flex-direction: column; text-align: center; }
-            .date-filter .filter-header { flex-direction: column; align-items: stretch; }
-            .date-filter .filter-controls { flex-direction: column; align-items: stretch; }
-            .date-filter .filter-controls .date-group input { width: 100%; }
-            .date-filter .filter-stats { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .analytics-header {
+                flex-direction: column;
+                text-align: center;
+                padding: 20px;
+            }
+            .analytics-header h1 {
+                font-size: 1.4rem;
+                flex-direction: column;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .pillar-summary-left {
+                grid-template-columns: 1fr;
+            }
+            .gap-grid {
+                grid-template-columns: 1fr;
+            }
+            .cap-grid {
+                grid-template-columns: 1fr;
+            }
+            .timeline-items {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .timeline-items::before {
+                display: none;
+            }
+            .timeline-item {
+                flex-direction: row;
+                width: 100%;
+                justify-content: flex-start;
+                gap: 15px;
+            }
+            .export-section {
+                flex-direction: column;
+                align-items: center;
+            }
+            .btn-export {
+                width: 100%;
+                justify-content: center;
+            }
+            .admin-toggle {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .admin-toggle .airline-selector {
+                flex-direction: column;
+            }
+            .admin-toggle .airline-selector select {
+                width: 100%;
+            }
+            .comparison-table table {
+                font-size: 0.75rem;
+            }
+            .comparison-table table th,
+            .comparison-table table td {
+                padding: 8px 10px;
+            }
+            .role-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+            .date-filter .filter-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .date-filter .filter-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .date-filter .filter-controls .date-group input {
+                width: 100%;
+            }
+            .date-filter .filter-stats {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
         }
+
         @media (max-width: 480px) {
-            .stats-grid { grid-template-columns: 1fr; }
-            .pillar-chart-card .chart-container { height: 180px; max-width: 200px; }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .pillar-chart-card .chart-container {
+                height: 180px;
+                max-width: 200px;
+            }
         }
-        
+
         /* ===== Print Styles ===== */
         @media print {
-            .btn-back, .export-section, .btn-export, .admin-toggle, .role-banner, .date-filter { display: none !important; }
-            .analytics-container { padding: 0; }
-            .analytics-header { background: #0a2e4a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .stat-card, .pillar-card, .pillar-chart-card, .chart-card, .gap-analysis, .cap-section, .recommendations, .timeline, .comparison-table {
+            .btn-back,
+            .export-section,
+            .btn-export,
+            .admin-toggle,
+            .role-banner,
+            .date-filter {
+                display: none !important;
+            }
+            .analytics-container {
+                padding: 0;
+            }
+            .analytics-header {
+                background: #0a2e4a !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .stat-card,
+            .pillar-card,
+            .pillar-chart-card,
+            .chart-card,
+            .gap-analysis,
+            .cap-section,
+            .recommendations,
+            .timeline,
+            .comparison-table {
                 break-inside: avoid;
                 page-break-inside: avoid;
                 box-shadow: none !important;
                 border: 1px solid #dee2e6;
             }
-            .charts-grid { grid-template-columns: 1fr 1fr; }
-            .pillar-summary-wrapper { flex-direction: row; }
-            .pillar-summary-left { flex: 0 0 60%; }
-            .pillar-summary-right { flex: 0 0 40%; }
+            .charts-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .pillar-summary-wrapper {
+                flex-direction: row;
+            }
+            .pillar-summary-left {
+                flex: 0 0 60%;
+            }
+            .pillar-summary-right {
+                flex: 0 0 40%;
+            }
         }
     </style>
 </head>
@@ -1288,6 +1742,7 @@ AFFECTED: CAAN users viewing consolidated analytics
         let pillarChartInstance = null;
         let allAirlineData = {};
         let dateFilter = null;
+        let consolidatedData = null;
 
         // ============================================================
         // INITIALIZATION
@@ -1298,9 +1753,16 @@ AFFECTED: CAAN users viewing consolidated analytics
             const urlParams = new URLSearchParams(window.location.search);
             tenantId = urlParams.get('tenant') || 'default';
 
-            const userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
-            if (!userData.email) {
-                window.location.href = `../login.html`;
+            // Use auth module if available
+            let userData = null;
+            if (typeof getCurrentUser === 'function') {
+                userData = getCurrentUser();
+            } else {
+                userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
+            }
+
+            if (!userData || !userData.email) {
+                window.location.href = '../login.html';
                 return;
             }
 
@@ -1379,7 +1841,7 @@ AFFECTED: CAAN users viewing consolidated analytics
         // ============================================================
         function goToDashboard() {
             if (userRole === 'caan') {
-                window.location.href = `../thankyou.html`;
+                window.location.href = '../thankyou.html';
             } else {
                 window.location.href = `../dashboard.html?tenant=${tenantId}`;
             }
@@ -1395,7 +1857,7 @@ AFFECTED: CAAN users viewing consolidated analytics
         function getAllAirlinesWithDates() {
             const result = {};
             const airlines = ['sita-air', 'tara-air', 'summit-air', 'buddha-air', 'yeti-airlines', 'shree-airlines', 'danfe-air'];
-            
+
             airlines.forEach(tenantId => {
                 const completed = parseInt(localStorage.getItem(`sms_${tenantId}_completed_sessions`) || '0');
                 if (completed > 0) {
@@ -1409,7 +1871,7 @@ AFFECTED: CAAN users viewing consolidated analytics
                     };
                 }
             });
-            
+
             return result;
         }
 
@@ -1418,7 +1880,7 @@ AFFECTED: CAAN users viewing consolidated analytics
             const date = new Date(dateString);
             const start = startDate ? new Date(startDate) : null;
             const end = endDate ? new Date(endDate) : null;
-            
+
             if (start && date < start) return false;
             if (end && date > end) return false;
             return true;
@@ -1428,11 +1890,11 @@ AFFECTED: CAAN users viewing consolidated analytics
             const today = new Date();
             const startInput = document.getElementById('filterStartDate');
             const endInput = document.getElementById('filterEndDate');
-            
+
             let startDate = null;
             let endDate = null;
-            
-            switch(preset) {
+
+            switch (preset) {
                 case 'week':
                     startDate = new Date(today);
                     startDate.setDate(today.getDate() - today.getDay());
@@ -1458,15 +1920,16 @@ AFFECTED: CAAN users viewing consolidated analytics
                     endDate = null;
                     break;
             }
-            
+
             startInput.value = startDate ? startDate.toISOString().split('T')[0] : '';
             endInput.value = endDate ? endDate.toISOString().split('T')[0] : '';
-            
-            // Highlight active preset
-            document.querySelectorAll('.btn-preset').forEach(btn => {
-                btn.classList.toggle('active', btn.textContent === document.querySelector(`.btn-preset[onclick*="${preset}"]`)?.textContent);
-            });
-            
+
+            document.querySelectorAll('.btn-preset').forEach(btn => btn.classList.remove('active'));
+            const presetBtn = document.querySelector(`.btn-preset[onclick*="${preset}"]`);
+            if (presetBtn && preset !== 'all') {
+                presetBtn.classList.add('active');
+            }
+
             if (preset === 'all') {
                 clearDateFilter();
             } else {
@@ -1477,9 +1940,9 @@ AFFECTED: CAAN users viewing consolidated analytics
         function applyDateFilter() {
             const startDate = document.getElementById('filterStartDate').value;
             const endDate = document.getElementById('filterEndDate').value;
-            
+
             dateFilter = { startDate, endDate };
-            
+
             let rangeText = 'All time';
             if (startDate && endDate) {
                 rangeText = `${startDate} to ${endDate}`;
@@ -1488,10 +1951,10 @@ AFFECTED: CAAN users viewing consolidated analytics
             } else if (endDate) {
                 rangeText = `Up to ${endDate}`;
             }
-            
+
             document.getElementById('periodDisplay').textContent = rangeText;
             document.getElementById('filterStatus').textContent = rangeText !== 'All time' ? `✅ Filtered: ${rangeText}` : '';
-            
+
             renderView();
             updateComplianceStats();
         }
@@ -1502,9 +1965,9 @@ AFFECTED: CAAN users viewing consolidated analytics
             dateFilter = null;
             document.getElementById('periodDisplay').textContent = 'All time';
             document.getElementById('filterStatus').textContent = '';
-            
+
             document.querySelectorAll('.btn-preset').forEach(btn => btn.classList.remove('active'));
-            
+
             renderView();
             updateComplianceStats();
         }
@@ -1513,11 +1976,10 @@ AFFECTED: CAAN users viewing consolidated analytics
             const airlines = getAllAirlinesWithDates();
             let onTime = 0;
             let totalCompleted = 0;
-            const totalAirlines = Object.keys(airlines).length;
-            
+
             const startDate = dateFilter?.startDate || null;
             const endDate = dateFilter?.endDate || null;
-            
+
             for (const key in airlines) {
                 const airline = airlines[key];
                 totalCompleted++;
@@ -1528,7 +1990,7 @@ AFFECTED: CAAN users viewing consolidated analytics
                     }
                 }
             }
-            
+
             document.getElementById('onTimeCount').textContent = onTime;
             document.getElementById('pendingCount').textContent = Math.max(0, AIRLINES.length - onTime);
             document.getElementById('totalCompletedCount').textContent = totalCompleted;
@@ -1540,12 +2002,19 @@ AFFECTED: CAAN users viewing consolidated analytics
         function loadAllAirlineData() {
             allAirlineData = {};
 
+            // Use data-utils.js if available
+            if (typeof getAllAirlinesData === 'function') {
+                allAirlineData = getAllAirlinesData();
+                console.log('📊 Loaded airline data from data-utils:', Object.keys(allAirlineData));
+                return;
+            }
+
+            // Fallback: Load data manually
             if (userRole === 'caan' || userRole === 'admin') {
                 AIRLINES.forEach(airline => {
                     const tenantId = AIRLINE_TENANTS[airline];
-                    const data = getAirlineData(tenantId, airline);
+                    const data = getAirlineDataFallback(tenantId, airline);
                     if (data && data.sessionsCompleted > 0) {
-                        // Store completion date with data
                         data.completionDate = getAirlineCompletionDate(tenantId);
                         allAirlineData[tenantId] = data;
                     }
@@ -1555,25 +2024,25 @@ AFFECTED: CAAN users viewing consolidated analytics
             const userTenant = tenantId;
             if (userTenant && userTenant !== 'default' && userTenant !== 'caan') {
                 const airlineName = Object.keys(AIRLINE_TENANTS).find(key => AIRLINE_TENANTS[key] === userTenant) || userAirline;
-                const data = getAirlineData(userTenant, airlineName);
+                const data = getAirlineDataFallback(userTenant, airlineName);
                 if (data && data.sessionsCompleted > 0) {
                     data.completionDate = getAirlineCompletionDate(userTenant);
                     allAirlineData[userTenant] = data;
                 }
             }
 
-            const defaultData = getAirlineData('default', 'Default');
+            const defaultData = getAirlineDataFallback('default', 'Default');
             if (defaultData && defaultData.sessionsCompleted > 0) {
                 allAirlineData['default'] = defaultData;
             }
 
-            console.log('📊 Loaded airline data:', Object.keys(allAirlineData));
+            console.log('📊 Loaded airline data (fallback):', Object.keys(allAirlineData));
         }
 
         // ============================================================
-        // GET AIRLINE DATA FROM LOCALSTORAGE
+        // FALLBACK: GET AIRLINE DATA
         // ============================================================
-        function getAirlineData(tenantId, airlineName) {
+        function getAirlineDataFallback(tenantId, airlineName) {
             const completed = parseInt(localStorage.getItem(`sms_${tenantId}_completed_sessions`) || '0');
             if (completed === 0) return null;
 
@@ -1808,7 +2277,7 @@ AFFECTED: CAAN users viewing consolidated analytics
             if (userRole === 'caan' && dateFilter) {
                 const startDate = dateFilter.startDate || null;
                 const endDate = dateFilter.endDate || null;
-                
+
                 filteredData = {};
                 for (const key in allAirlineData) {
                     const airline = allAirlineData[key];
@@ -1828,6 +2297,13 @@ AFFECTED: CAAN users viewing consolidated analytics
                 }
             } else {
                 data = allAirlineData[tenantId] || null;
+            }
+
+            // Store consolidated data for export
+            if (data && data.isConsolidated) {
+                consolidatedData = data;
+            } else if (data) {
+                consolidatedData = data;
             }
 
             if (!data) {
@@ -1912,20 +2388,20 @@ AFFECTED: CAAN users viewing consolidated analytics
                 const card = document.createElement('div');
                 card.className = `pillar-card pillar-${pillar.toLowerCase().replace(' ', '-')}`;
                 card.innerHTML = `
-                    <div class="pillar-header">
-                        <h4><i class="fas ${PILLAR_ICONS[pillar]}"></i> ${pillar}</h4>
-                        <span class="pillar-score ${score >= 4.0 ? 'good' : (score >= 3.0 ? 'average' : 'poor')}">${score.toFixed(1)}</span>
-                    </div>
-                    <div class="pillar-elements">
-                        Elements: ${elements.map(e => `<span>${e}</span>`).join('')}
-                    </div>
-                    <div class="pillar-elements" style="font-size:0.75rem;margin-top:4px;color:#6c757d;">
-                        ${pillarDescriptions[pillar]}
-                    </div>
-                    <div class="pillar-status ${status}">
-                        ${statusIcon} ${statusLabel} - ${score >= 4.0 ? 'No immediate action needed' : (score >= 3.0 ? 'Some improvement needed' : 'Immediate attention required')}
-                    </div>
-                `;
+                            <div class="pillar-header">
+                                <h4><i class="fas ${PILLAR_ICONS[pillar]}"></i> ${pillar}</h4>
+                                <span class="pillar-score ${score >= 4.0 ? 'good' : (score >= 3.0 ? 'average' : 'poor')}">${score.toFixed(1)}</span>
+                            </div>
+                            <div class="pillar-elements">
+                                Elements: ${elements.map(e => `<span>${e}</span>`).join('')}
+                            </div>
+                            <div class="pillar-elements" style="font-size:0.75rem;margin-top:4px;color:#6c757d;">
+                                ${pillarDescriptions[pillar]}
+                            </div>
+                            <div class="pillar-status ${status}">
+                                ${statusIcon} ${statusLabel} - ${score >= 4.0 ? 'No immediate action needed' : (score >= 3.0 ? 'Some improvement needed' : 'Immediate attention required')}
+                            </div>
+                        `;
                 container.appendChild(card);
             });
         }
@@ -1984,10 +2460,10 @@ AFFECTED: CAAN users viewing consolidated analytics
                 const item = document.createElement('div');
                 item.className = 'legend-item';
                 item.innerHTML = `
-                    <span class="color-box" style="background:${colors[index]};"></span>
-                    <span>${label}</span>
-                    <span class="score">${scores[index].toFixed(1)}</span>
-                `;
+                            <span class="color-box" style="background:${colors[index]};"></span>
+                            <span>${label}</span>
+                            <span class="score">${scores[index].toFixed(1)}</span>
+                        `;
                 container.appendChild(item);
             });
         }
@@ -1997,22 +2473,22 @@ AFFECTED: CAAN users viewing consolidated analytics
 
             if ((userRole === 'caan' || userRole === 'admin') && isConsolidated && data.airlineData) {
                 let html = `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Airline</th>
-                                <th>Overall Score</th>
-                                <th>Policy</th>
-                                <th>Risk Mgmt</th>
-                                <th>Assurance</th>
-                                <th>Promotion</th>
-                                <th>Critical Gaps</th>
-                                <th>Completed</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Airline</th>
+                                        <th>Overall Score</th>
+                                        <th>Policy</th>
+                                        <th>Risk Mgmt</th>
+                                        <th>Assurance</th>
+                                        <th>Promotion</th>
+                                        <th>Critical Gaps</th>
+                                        <th>Completed</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                            `;
 
                 const sorted = [...data.airlineData].sort((a, b) => b.overallAverage - a.overallAverage);
 
@@ -2020,58 +2496,59 @@ AFFECTED: CAAN users viewing consolidated analytics
                     const score = airline.overallAverage || 0;
                     const scoreClass = score >= 4.0 ? 'high' : (score >= 3.0 ? 'medium' : 'low');
                     const status = score >= 4.0 ? '✅ Strong' : (score >= 3.0 ? '⚠️ Moderate' : '🔴 Weak');
-                    const dateLabel = airline.completionDate ? new Date(airline.completionDate).toLocaleDateString() : 'Pending';
+                    const dateLabel = airline.completionDate ? new Date(airline.completionDate).toLocaleDateString() :
+                        'Pending';
 
                     html += `
-                        <tr>
-                            <td>
-                                <a href="analytics.html?tenant=${airline.tenantId}" class="airline-link">
-                                    ${airline.name}
-                                </a>
-                            </td>
-                            <td><span class="score-badge ${scoreClass}">${score.toFixed(1)}</span></td>
-                            <td>${(airline.pillarAverages.Policy || 0).toFixed(1)}</td>
-                            <td>${(airline.pillarAverages['Risk Management'] || 0).toFixed(1)}</td>
-                            <td>${(airline.pillarAverages.Assurance || 0).toFixed(1)}</td>
-                            <td>${(airline.pillarAverages.Promotion || 0).toFixed(1)}</td>
-                            <td>${airline.criticalGaps || 0}</td>
-                            <td>${dateLabel}</td>
-                            <td>${status}</td>
-                        </tr>
-                    `;
+                                <tr>
+                                    <td>
+                                        <a href="analytics.html?tenant=${airline.tenantId}" class="airline-link">
+                                            ${airline.name}
+                                        </a>
+                                    </td>
+                                    <td><span class="score-badge ${scoreClass}">${score.toFixed(1)}</span></td>
+                                    <td>${(airline.pillarAverages.Policy || 0).toFixed(1)}</td>
+                                    <td>${(airline.pillarAverages['Risk Management'] || 0).toFixed(1)}</td>
+                                    <td>${(airline.pillarAverages.Assurance || 0).toFixed(1)}</td>
+                                    <td>${(airline.pillarAverages.Promotion || 0).toFixed(1)}</td>
+                                    <td>${airline.criticalGaps || 0}</td>
+                                    <td>${dateLabel}</td>
+                                    <td>${status}</td>
+                                </tr>
+                            `;
                 });
 
                 html += `
-                        </tbody>
-                    </table>
-                    <div style="margin-top:10px;font-size:0.8rem;color:#6c757d;text-align:center;">
-                        Click on any airline name to view detailed analytics
-                    </div>
-                `;
+                                </tbody>
+                            </table>
+                            <div style="margin-top:10px;font-size:0.8rem;color:#6c757d;text-align:center;">
+                                Click on any airline name to view detailed analytics
+                            </div>
+                        `;
 
                 container.innerHTML = html;
             } else {
                 let html = `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Metric</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td><strong>Airline</strong></td><td>${data.name}</td></tr>
-                            <tr><td><strong>Overall Score</strong></td><td>${(data.overallAverage || 0).toFixed(1)} / 5.0</td></tr>
-                            <tr><td><strong>Policy</strong></td><td>${(data.pillarAverages.Policy || 0).toFixed(1)} / 5.0</td></tr>
-                            <tr><td><strong>Risk Management</strong></td><td>${(data.pillarAverages['Risk Management'] || 0).toFixed(1)} / 5.0</td></tr>
-                            <tr><td><strong>Assurance</strong></td><td>${(data.pillarAverages.Assurance || 0).toFixed(1)} / 5.0</td></tr>
-                            <tr><td><strong>Promotion</strong></td><td>${(data.pillarAverages.Promotion || 0).toFixed(1)} / 5.0</td></tr>
-                            <tr><td><strong>Critical Gaps</strong></td><td>${data.criticalGaps || 0}</td></tr>
-                            <tr><td><strong>Sessions Completed</strong></td><td>${data.sessionsCompleted || 0} / ${data.totalSessions || 5}</td></tr>
-                            ${data.completionDate ? `<tr><td><strong>Completion Date</strong></td><td>${new Date(data.completionDate).toLocaleString()}</td></tr>` : ''}
-                        </tbody>
-                    </table>
-                `;
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Metric</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><strong>Airline</strong></td><td>${data.name}</td></tr>
+                                    <tr><td><strong>Overall Score</strong></td><td>${(data.overallAverage || 0).toFixed(1)} / 5.0</td></tr>
+                                    <tr><td><strong>Policy</strong></td><td>${(data.pillarAverages.Policy || 0).toFixed(1)} / 5.0</td></tr>
+                                    <tr><td><strong>Risk Management</strong></td><td>${(data.pillarAverages['Risk Management'] || 0).toFixed(1)} / 5.0</td></tr>
+                                    <tr><td><strong>Assurance</strong></td><td>${(data.pillarAverages.Assurance || 0).toFixed(1)} / 5.0</td></tr>
+                                    <tr><td><strong>Promotion</strong></td><td>${(data.pillarAverages.Promotion || 0).toFixed(1)} / 5.0</td></tr>
+                                    <tr><td><strong>Critical Gaps</strong></td><td>${data.criticalGaps || 0}</td></tr>
+                                    <tr><td><strong>Sessions Completed</strong></td><td>${data.sessionsCompleted || 0} / ${data.totalSessions || 5}</td></tr>
+                                    ${data.completionDate ? `<tr><td><strong>Completion Date</strong></td><td>${new Date(data.completionDate).toLocaleString()}</td></tr>` : ''}
+                                </tbody>
+                            </table>
+                        `;
 
                 container.innerHTML = html;
             }
@@ -2105,9 +2582,9 @@ AFFECTED: CAAN users viewing consolidated analytics
                 const label = document.createElement('div');
                 label.className = 'label';
                 label.innerHTML = `
-                    <span class="session-num">Session ${i}</span>
-                    ${i <= completed ? '✅ Done' : (i === completed + 1 ? '📋 Ready' : '🔒 Locked')}
-                `;
+                            <span class="session-num">Session ${i}</span>
+                            ${i <= completed ? '✅ Done' : (i === completed + 1 ? '📋 Ready' : '🔒 Locked')}
+                        `;
 
                 item.appendChild(circle);
                 item.appendChild(label);
@@ -2141,17 +2618,17 @@ AFFECTED: CAAN users viewing consolidated analytics
                 const gapDisplay = gap.gap <= 0 ? '+' + Math.abs(gap.gap).toFixed(1) : '-' + gap.gap.toFixed(1);
 
                 item.innerHTML = `
-                    <div class="element-name">
-                        <span style="font-weight:700;color:#0a2e4a;">Element ${key}</span>
-                        <span style="font-weight:400;color:#6c757d;font-size:0.85rem;display:block;">${gap.name}</span>
-                        <span class="pillar-tag">${gap.pillar}</span>
-                    </div>
-                    <div class="score">
-                        <span class="current">${gap.current.toFixed(1)}</span>
-                        <span class="target">/ 5.0</span>
-                        <span class="gap-value ${gapClass}">${gapDisplay}</span>
-                    </div>
-                `;
+                            <div class="element-name">
+                                <span style="font-weight:700;color:#0a2e4a;">Element ${key}</span>
+                                <span style="font-weight:400;color:#6c757d;font-size:0.85rem;display:block;">${gap.name}</span>
+                                <span class="pillar-tag">${gap.pillar}</span>
+                            </div>
+                            <div class="score">
+                                <span class="current">${gap.current.toFixed(1)}</span>
+                                <span class="target">/ 5.0</span>
+                                <span class="gap-value ${gapClass}">${gapDisplay}</span>
+                            </div>
+                        `;
 
                 container.appendChild(item);
             });
@@ -2179,9 +2656,9 @@ AFFECTED: CAAN users viewing consolidated analytics
             if (Object.keys(pillarGroups).length === 0) {
                 container.innerHTML =
                     `<div style="grid-column:1/-1;text-align:center;padding:30px;color:#28a745;">
-                        <i class="fas fa-check-circle" style="font-size:2rem;display:block;margin-bottom:10px;"></i>
-                        <h4 style="color:#28a745;">Excellent! No corrective actions needed.</h4>
-                    </div>`;
+                                <i class="fas fa-check-circle" style="font-size:2rem;display:block;margin-bottom:10px;"></i>
+                                <h4 style="color:#28a745;">Excellent! No corrective actions needed.</h4>
+                            </div>`;
                 return;
             }
 
@@ -2231,23 +2708,23 @@ AFFECTED: CAAN users viewing consolidated analytics
                 const card = document.createElement('div');
                 card.className = `cap-item priority-${priorityClass}`;
                 card.innerHTML = `
-                    <div class="cap-header">
-                        <span class="cap-pillar"><i class="fas ${PILLAR_ICONS[pillar]}"></i> ${pillar}</span>
-                        <span class="cap-priority ${priorityClass}">${priorityLabel} PRIORITY</span>
-                    </div>
-                    <div class="cap-title">${pillar} Improvement Plan</div>
-                    <div class="cap-current">
-                        Current score: ${topGap.gap.current.toFixed(1)}/5.0 | Gap: ${topGap.gap.gap.toFixed(1)} points
-                        ${pillarGroups[pillar].length > 1 ? `| ${pillarGroups[pillar].length} elements affected` : ''}
-                    </div>
-                    <div class="cap-action">
-                        <i class="fas fa-check-circle"></i>
-                        <strong>Recommended Actions:</strong>
-                        <ul style="margin-top:5px;padding-left:20px;font-size:0.85rem;color:#495057;">
-                            ${actions.slice(0, 3).map(a => `<li>${a}</li>`).join('')}
-                        </ul>
-                    </div>
-                `;
+                            <div class="cap-header">
+                                <span class="cap-pillar"><i class="fas ${PILLAR_ICONS[pillar]}"></i> ${pillar}</span>
+                                <span class="cap-priority ${priorityClass}">${priorityLabel} PRIORITY</span>
+                            </div>
+                            <div class="cap-title">${pillar} Improvement Plan</div>
+                            <div class="cap-current">
+                                Current score: ${topGap.gap.current.toFixed(1)}/5.0 | Gap: ${topGap.gap.gap.toFixed(1)} points
+                                ${pillarGroups[pillar].length > 1 ? `| ${pillarGroups[pillar].length} elements affected` : ''}
+                            </div>
+                            <div class="cap-action">
+                                <i class="fas fa-check-circle"></i>
+                                <strong>Recommended Actions:</strong>
+                                <ul style="margin-top:5px;padding-left:20px;font-size:0.85rem;color:#495057;">
+                                    ${actions.slice(0, 3).map(a => `<li>${a}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `;
                 container.appendChild(card);
             }
         }
@@ -2280,9 +2757,9 @@ AFFECTED: CAAN users viewing consolidated analytics
             if (recommendations.length === 0) {
                 container.innerHTML =
                     `<div style="text-align:center;padding:30px;color:#28a745;">
-                        <i class="fas fa-check-circle" style="font-size:2rem;display:block;margin-bottom:10px;"></i>
-                        <h4 style="color:#28a745;">Excellent! No significant gaps identified.</h4>
-                    </div>`;
+                                <i class="fas fa-check-circle" style="font-size:2rem;display:block;margin-bottom:10px;"></i>
+                                <h4 style="color:#28a745;">Excellent! No significant gaps identified.</h4>
+                            </div>`;
                 return;
             }
 
@@ -2295,18 +2772,18 @@ AFFECTED: CAAN users viewing consolidated analytics
                 const item = document.createElement('div');
                 item.className = 'recommendation-item';
                 item.innerHTML = `
-                    <div class="priority ${priority}">${index + 1}</div>
-                    <div class="content">
-                        <div class="title">Element ${rec.element}: ${rec.name}</div>
-                        <div class="description">
-                            Current score: ${rec.current.toFixed(1)}/5.0. Gap of ${rec.gap.toFixed(1)} points from target (4.5/5).
-                        </div>
-                        <div class="meta">
-                            <i class="fas fa-tag"></i> ${rec.severity}
-                            <span style="margin-left:15px;"><i class="fas fa-building"></i> ${rec.pillar}</span>
-                        </div>
-                    </div>
-                `;
+                            <div class="priority ${priority}">${index + 1}</div>
+                            <div class="content">
+                                <div class="title">Element ${rec.element}: ${rec.name}</div>
+                                <div class="description">
+                                    Current score: ${rec.current.toFixed(1)}/5.0. Gap of ${rec.gap.toFixed(1)} points from target (4.5/5).
+                                </div>
+                                <div class="meta">
+                                    <i class="fas fa-tag"></i> ${rec.severity}
+                                    <span style="margin-left:15px;"><i class="fas fa-building"></i> ${rec.pillar}</span>
+                                </div>
+                            </div>
+                        `;
                 container.appendChild(item);
             });
         }
@@ -2512,7 +2989,8 @@ AFFECTED: CAAN users viewing consolidated analytics
                 csv += '\nAIRLINE BREAKDOWN\n';
                 csv += 'Airline,Overall Score,Policy,Risk Management,Assurance,Promotion,Critical Gaps,Completion Date\n';
                 data.airlineData.forEach(airline => {
-                    const date = airline.completionDate ? new Date(airline.completionDate).toLocaleDateString() : 'Pending';
+                    const date = airline.completionDate ? new Date(airline.completionDate).toLocaleDateString() :
+                        'Pending';
                     csv +=
                         `${airline.name},${(airline.overallAverage || 0).toFixed(1)},${(airline.pillarAverages.Policy || 0).toFixed(1)},${(airline.pillarAverages['Risk Management'] || 0).toFixed(1)},${(airline.pillarAverages.Assurance || 0).toFixed(1)},${(airline.pillarAverages.Promotion || 0).toFixed(1)},${airline.criticalGaps || 0},${date}\n`;
                 });

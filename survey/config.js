@@ -1,3 +1,16 @@
+/*
+================================================================================
+FILE: SurveySMS/survey/config.js
+VERSION: 1.0.0
+REVISION DATE: 2026-06-17
+PURPOSE: Multi-tenant configuration - tenant_id pulled from URL parameters
+DEPENDENCIES: None
+USAGE: survey/survey.html
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
+================================================================================
+*/
+
 // SurveySMS/survey/config.js
 // Multi-tenant configuration - tenant_id pulled from URL parameters
 

@@ -1,170 +1,15 @@
 /*
 ================================================================================
 FILE: SurveySMS/js/login.js
-VERSION: 7.0
+VERSION: 7.1.0
 REVISION DATE: 2026-06-17
-PURPOSE: Login page logic - authentication, language support
-REVISED PURPOSE: Added safety officer credentials for each airline
-AFFECTED: login.html
+PURPOSE: Login page logic - authentication using centralized credentials
+DEPENDENCIES: credentials.js, translations.js
+USAGE: login.html
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
 ================================================================================
 */
-
-// ============================================================
-// CONFIGURATION - USER DATABASE
-// ============================================================
-const USER_DB = {
-    // ===== AIRLINE USERS - SURVEY PARTICIPANTS =====
-    'demo@sitaair.com.np': {
-        email: 'demo@sitaair.com.np',
-        password: 'password123',
-        role: 'participant',
-        airline: 'Sita Air',
-        tenantId: 'sita-air',
-        displayName: 'Sita Air (Participant)',
-        redirect: 'survey'
-    },
-    'demo@taraair.com': {
-        email: 'demo@taraair.com',
-        password: 'password123',
-        role: 'participant',
-        airline: 'Tara Air',
-        tenantId: 'tara-air',
-        displayName: 'Tara Air (Participant)',
-        redirect: 'survey'
-    },
-    'demo@summitair.com.np': {
-        email: 'demo@summitair.com.np',
-        password: 'password123',
-        role: 'participant',
-        airline: 'Summit Air',
-        tenantId: 'summit-air',
-        displayName: 'Summit Air (Participant)',
-        redirect: 'survey'
-    },
-    'demo@buddhaair.com': {
-        email: 'demo@buddhaair.com',
-        password: 'password123',
-        role: 'participant',
-        airline: 'Buddha Air',
-        tenantId: 'buddha-air',
-        displayName: 'Buddha Air (Participant)',
-        redirect: 'survey'
-    },
-    'demo@yetiairlines.com': {
-        email: 'demo@yetiairlines.com',
-        password: 'password123',
-        role: 'participant',
-        airline: 'Yeti Airlines',
-        tenantId: 'yeti-airlines',
-        displayName: 'Yeti Airlines (Participant)',
-        redirect: 'survey'
-    },
-    'demo@shreeairlines.com': {
-        email: 'demo@shreeairlines.com',
-        password: 'password123',
-        role: 'participant',
-        airline: 'Shree Airlines',
-        tenantId: 'shree-airlines',
-        displayName: 'Shree Airlines (Participant)',
-        redirect: 'survey'
-    },
-    'demo@flydanfe.com': {
-        email: 'demo@flydanfe.com',
-        password: 'password123',
-        role: 'participant',
-        airline: 'Danfe Air',
-        tenantId: 'danfe-air',
-        displayName: 'Danfe Air (Participant)',
-        redirect: 'survey'
-    },
-    
-    // ===== AIRLINE USERS - SAFETY OFFICERS =====
-    'safety@sitaair.com.np': {
-        email: 'safety@sitaair.com.np',
-        password: 'password123',
-        role: 'safety_officer',
-        airline: 'Sita Air',
-        tenantId: 'sita-air',
-        displayName: 'Sita Air Safety Officer',
-        redirect: 'dashboard'
-    },
-    'safety@taraair.com': {
-        email: 'safety@taraair.com',
-        password: 'password123',
-        role: 'safety_officer',
-        airline: 'Tara Air',
-        tenantId: 'tara-air',
-        displayName: 'Tara Air Safety Officer',
-        redirect: 'dashboard'
-    },
-    'safety@summitair.com.np': {
-        email: 'safety@summitair.com.np',
-        password: 'password123',
-        role: 'safety_officer',
-        airline: 'Summit Air',
-        tenantId: 'summit-air',
-        displayName: 'Summit Air Safety Officer',
-        redirect: 'dashboard'
-    },
-    'safety@buddhaair.com': {
-        email: 'safety@buddhaair.com',
-        password: 'password123',
-        role: 'safety_officer',
-        airline: 'Buddha Air',
-        tenantId: 'buddha-air',
-        displayName: 'Buddha Air Safety Officer',
-        redirect: 'dashboard'
-    },
-    'safety@yetiairlines.com': {
-        email: 'safety@yetiairlines.com',
-        password: 'password123',
-        role: 'safety_officer',
-        airline: 'Yeti Airlines',
-        tenantId: 'yeti-airlines',
-        displayName: 'Yeti Airlines Safety Officer',
-        redirect: 'dashboard'
-    },
-    'safety@shreeairlines.com': {
-        email: 'safety@shreeairlines.com',
-        password: 'password123',
-        role: 'safety_officer',
-        airline: 'Shree Airlines',
-        tenantId: 'shree-airlines',
-        displayName: 'Shree Airlines Safety Officer',
-        redirect: 'dashboard'
-    },
-    'safety@flydanfe.com': {
-        email: 'safety@flydanfe.com',
-        password: 'password123',
-        role: 'safety_officer',
-        airline: 'Danfe Air',
-        tenantId: 'danfe-air',
-        displayName: 'Danfe Air Safety Officer',
-        redirect: 'dashboard'
-    },
-    
-    // ===== CAAN USER =====
-    'demo@caan.gov.np': {
-        email: 'demo@caan.gov.np',
-        password: 'password123',
-        role: 'caan',
-        airline: 'CAAN',
-        tenantId: 'caan',
-        displayName: 'CAAN (Regulator)',
-        redirect: 'analytics'
-    },
-    
-    // ===== ADMIN USER =====
-    'admin@surveysms.com': {
-        email: 'admin@surveysms.com',
-        password: 'survey2026',
-        role: 'admin',
-        airline: 'Administrator',
-        tenantId: 'admin',
-        displayName: 'Administrator',
-        redirect: 'admin'
-    }
-};
 
 // ============================================================
 // STATE
@@ -207,7 +52,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     console.log('💡 Login page ready in:', currentLang);
-    console.log('💡 Available roles: Participant (demo@), Safety Officer (safety@)');
+    console.log('💡 Using centralized credential management (credentials.js)');
+    
+    // Log available users (for debugging)
+    if (window.CREDENTIALS) {
+        console.log(`👥 ${Object.keys(window.CREDENTIALS).length} users available`);
+    }
 });
 
 // ============================================================
@@ -280,7 +130,7 @@ function updateTranslations() {
 }
 
 // ============================================================
-// LOGIN HANDLER
+// LOGIN HANDLER (UPDATED)
 // ============================================================
 function handleLogin(event) {
     event.preventDefault();
@@ -313,9 +163,24 @@ function handleLogin(event) {
         return;
     }
 
-    const user = USER_DB[email];
+    // ============================================================
+    // 🔐 AUTHENTICATION USING CREDENTIALS MODULE
+    // ============================================================
+    
+    // Check if credentials module is loaded
+    if (typeof validateCredentials === 'undefined') {
+        console.error('❌ Credentials module not loaded!');
+        if (errorEl) {
+            errorEl.textContent = 'System error: Authentication service unavailable. Please refresh.';
+            errorEl.classList.add('show');
+        }
+        return;
+    }
 
-    if (user && user.password === password) {
+    // Validate credentials
+    const user = validateCredentials(email, password);
+
+    if (user) {
         console.log('✅ Login successful for:', email);
         console.log('👤 Role:', user.role);
         console.log('✈️ Airline:', user.airline);
@@ -333,14 +198,15 @@ function handleLogin(event) {
         }
 
         const userData = {
-            email: user.email,
+            email: email,
             name: user.displayName,
             role: user.role,
             airline: user.airline,
             tenantId: user.tenantId,
             language: currentLang,
             picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.airline)}&background=0a2e4a&color=fff&size=128`,
-            lastLogin: new Date().toISOString()
+            lastLogin: new Date().toISOString(),
+            isDemo: user.metadata?.isDemo || true
         };
 
         localStorage.setItem('sms_user_data', JSON.stringify(userData));
@@ -348,13 +214,17 @@ function handleLogin(event) {
         localStorage.setItem('sms_lang', currentLang);
 
         setTimeout(function() {
-            redirectUser(user);
+            redirectUser(userData);
         }, 1000);
 
     } else {
         console.log('❌ Login failed - Invalid credentials');
         if (errorEl) {
-            errorEl.textContent = user ? t('invalid_password') || 'Invalid password. Please try again.' : t('email_not_found') || 'Email not found. Please check your credentials.';
+            // Check if user exists
+            const userExists = typeof getUserByEmail === 'function' && getUserByEmail(email);
+            errorEl.textContent = userExists ? 
+                'Invalid password. Please try again.' : 
+                'Email not found. Please check your credentials.';
             errorEl.classList.add('show');
         }
         
@@ -377,18 +247,18 @@ function handleLogin(event) {
 // ============================================================
 // REDIRECT USER BASED ON ROLE
 // ============================================================
-function redirectUser(user) {
-    const tenantId = user.tenantId;
+function redirectUser(userData) {
+    const tenantId = userData.tenantId;
+    const role = userData.role;
 
-    if (user.role === 'admin') {
+    if (role === 'admin') {
         window.location.href = `admin.html`;
-    } else if (user.role === 'caan') {
+    } else if (role === 'caan') {
         window.location.href = `analytics/analytics.html?tenant=${tenantId}&role=caan&lang=${currentLang}`;
-    } else if (user.role === 'safety_officer') {
-        // Safety Officer → Dashboard → Analytics
+    } else if (role === 'safety_officer') {
         window.location.href = `dashboard.html?tenant=${tenantId}&role=safety&lang=${currentLang}`;
     } else {
-        // Participant → Survey
+        // Participant
         window.location.href = `survey/survey.html?tenant=${tenantId}&session=1&lang=${currentLang}`;
     }
 }
@@ -420,7 +290,6 @@ document.addEventListener('keydown', function(e) {
 // EXPOSE FOR TESTING
 // ============================================================
 window.__login = {
-    USER_DB,
     currentLang,
     handleLogin,
     goBack,
@@ -428,7 +297,8 @@ window.__login = {
     toggleLanguage
 };
 
-console.log('🔐 Login page ready');
+console.log('🔐 Login page ready with centralized credential management');
+console.log('💡 Using credentials.js for authentication');
 console.log('💡 Demo Users (Participants): demo@*.com → Survey');
 console.log('💡 Safety Officers: safety@*.com → Dashboard → Analytics');
 console.log('💡 CAAN: demo@caan.gov.np → Analytics');

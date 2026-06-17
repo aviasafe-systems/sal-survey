@@ -1,12 +1,17 @@
 /*
 ================================================================================
-FILE: SurveySMS/js/questions/question-bank.js
-VERSION: 1.0
+FILE: SurveySMS/questions/question-bank.js
+VERSION: 1.0.0
 REVISION DATE: 2026-06-17
-PURPOSE: Complete ICAO Annex 19 SMS Question Bank (50+ questions in EN & NP)
-AFFECTED: Survey page, Analytics, Gap Analysis
+PURPOSE: Complete ICAO Annex 19 SMS Question Bank (48 questions in EN & NP across 12 elements)
+DEPENDENCIES: None
+USAGE: survey/survey.html, analytics pages
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
 ================================================================================
 */
+
+// [Your existing question-bank.js content - unchanged, only header updated]
 
 const QUESTION_BANK = {
     // ============================================================

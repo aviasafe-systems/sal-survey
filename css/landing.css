@@ -1,12 +1,17 @@
 /*
 ================================================================================
 FILE: SurveySMS/css/landing.css
-VERSION: 3.0
+VERSION: 1.0.0
 REVISION DATE: 2026-06-17
 PURPOSE: Landing page specific styles with glassmorphism cards
-AFFECTED: index.html
+DEPENDENCIES: global.css
+USAGE: index.html
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
 ================================================================================
 */
+
+/* [Your existing landing.css content - unchanged, only header updated] */
 
 /* ===== Landing Container ===== */
 .landing-container {

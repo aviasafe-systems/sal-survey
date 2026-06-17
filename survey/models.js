@@ -1,6 +1,18 @@
-// SurveySMS/survey/models.js
-// Pydantic-style data models for SurveySMS
-// These match the Supabase export headers
+/*
+================================================================================
+FILE: SurveySMS/survey/models.js
+VERSION: 1.0.0
+REVISION DATE: 2026-06-17
+PURPOSE: Pydantic-style data models for SurveySMS - SurveyResponse and AnalyticsData classes
+DEPENDENCIES: None
+USAGE: survey/survey.html, analytics pages
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
+================================================================================
+*/
+
+// [Your existing models.js content - unchanged, only header updated]
+
 
 class SurveyResponse {
     constructor(data) {

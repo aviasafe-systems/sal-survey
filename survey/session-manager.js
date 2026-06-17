@@ -1,4 +1,18 @@
-// SurveySMS/utils/storage.js
+/*
+================================================================================
+FILE: SurveySMS/survey/session-manager.js
+VERSION: 1.0.0
+REVISION DATE: 2026-06-17
+PURPOSE: Session management - progress tracking, answers persistence, completion
+DEPENDENCIES: None
+USAGE: survey/survey.html
+AUTHOR: Ghanshyam Acharya
+CODE OWNER: aviasafetysystems.com
+================================================================================
+*/
+
+// [Your existing session-manager.js content - unchanged, only header updated]
+
 // Data persistence utilities
 
 class StorageManager {
