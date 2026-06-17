@@ -1,0 +1,558 @@
+<!--
+================================================================================
+FILE: SurveySMS/dashboard-login.html
+VERSION: 7.0
+REVISION DATE: 2026-06-17
+PURPOSE: Safety Officer dedicated login page with airline-specific branding
+REVISED PURPOSE: Fixed redirect to safety-dashboard.html
+AFFECTED: Safety Officers (safety@*.com)
+================================================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Safety Officer Login - SMS Gap Analysis</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a2e4a 0%, #1a4a6a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-wrapper { width: 100%; max-width: 460px; }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+            padding: 45px 40px 35px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #e8a838, #f5d68a, #e8a838);
+        }
+
+        .login-container .shield-icon {
+            display: inline-block;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+            border: 2px solid #e8a838;
+        }
+
+        .login-container .shield-icon i {
+            font-size: 2.5rem;
+            color: #e8a838;
+        }
+
+        .login-container h1 {
+            color: #0a2e4a;
+            font-size: 1.6rem;
+            margin-bottom: 5px;
+        }
+
+        .login-container .subtitle {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .login-container .airline-badge {
+            display: inline-block;
+            background: #e8f4f8;
+            color: #0a2e4a;
+            padding: 4px 18px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 8px 0 20px 0;
+            border: 1px solid #b8d4e3;
+        }
+
+        .login-container .airline-badge i {
+            color: #e8a838;
+            margin-right: 6px;
+        }
+
+        .login-container .role-badge {
+            display: inline-block;
+            background: #e8a838;
+            color: #0a2e4a;
+            padding: 2px 14px;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 20px;
+        }
+
+        .login-container .divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
+
+        .login-container .divider::before,
+        .login-container .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .login-container .divider::before { margin-right: 15px; }
+        .login-container .divider::after { margin-left: 15px; }
+
+        .login-form { text-align: left; }
+
+        .login-form .form-group { margin-bottom: 18px; }
+
+        .login-form .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #0a2e4a;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .login-form .form-group label i {
+            color: #e8a838;
+            margin-right: 6px;
+        }
+
+        .login-form .form-group input {
+            width: 100%;
+            padding: 13px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .login-form .form-group input:focus {
+            border-color: #0a2e4a;
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(10, 46, 74, 0.08);
+        }
+
+        .login-form .form-group input::placeholder { color: #adb5bd; }
+
+        .login-btn {
+            background: #0a2e4a;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .login-btn:hover {
+            background: #1a4a6a;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(10, 46, 74, 0.3);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .login-btn i { font-size: 1rem; }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin: 10px 0 18px 0;
+            display: none;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .error-message.show { display: block; }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin: 10px 0 18px 0;
+            display: none;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .success-message.show { display: block; }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 18px;
+            color: #6c757d;
+            text-decoration: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .back-link:hover { color: #0a2e4a; }
+
+        .footer-note {
+            margin-top: 22px;
+            padding-top: 18px;
+            border-top: 1px solid #e9ecef;
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+
+        .footer-note i { color: #e8a838; }
+
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 480px) {
+            .login-container { padding: 30px 20px; }
+            .login-container h1 { font-size: 1.3rem; }
+            .login-btn { font-size: 0.95rem; padding: 13px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-wrapper">
+        <div class="login-container">
+
+            <div class="shield-icon">
+                <i class="fas fa-user-shield"></i>
+            </div>
+
+            <h1>Safety Officer Login</h1>
+            <p class="subtitle">Access your airline's SMS Gap Analysis Dashboard</p>
+
+            <div class="airline-badge" id="airlineBadge">
+                <i class="fas fa-plane"></i> <span id="airlineName">Select Your Airline</span>
+            </div>
+
+            <div class="role-badge">
+                <i class="fas fa-shield-alt"></i> SAFETY OFFICER
+            </div>
+
+            <div class="divider">Enter Your Credentials</div>
+
+            <form class="login-form" id="loginForm" onsubmit="return handleLogin(event)" autocomplete="off">
+                <div class="error-message" id="errorMessage">Invalid credentials. Please check your email and password.</div>
+                <div class="success-message" id="successMessage">Login successful! Redirecting to dashboard...</div>
+
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
+                    <input type="email" id="email" placeholder="safety@your-airline.com" 
+                           autocomplete="off" 
+                           autocorrect="off" 
+                           autocapitalize="off" 
+                           spellcheck="false"
+                           required />
+                </div>
+
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="password" placeholder="Enter your password" 
+                           autocomplete="new-password" 
+                           autocorrect="off" 
+                           autocapitalize="off" 
+                           spellcheck="false"
+                           required />
+                </div>
+
+                <button type="submit" class="login-btn" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Access Dashboard
+                </button>
+            </form>
+
+            <a class="back-link" onclick="goBack()">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
+
+            <div class="footer-note">
+                <i class="fas fa-shield-alt"></i>
+                AviaSafeSystems SMS Gap Analysis Platform &bull; Secure &bull; ICAO Annex 19
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // SIMPLE SAFETY OFFICER CREDENTIALS
+        // ============================================================
+        const AIRLINE_MAP = {
+            'safety@sitaair.com.np': 'Sita Air',
+            'safety@sitaair.com': 'Sita Air',
+            'safety@taraair.com': 'Tara Air',
+            'safety@summitair.com.np': 'Summit Air',
+            'safety@buddhaair.com': 'Buddha Air',
+            'safety@yetiairlines.com': 'Yeti Airlines',
+            'safety@shreeairlines.com': 'Shree Airlines',
+            'safety@flydanfe.com': 'Danfe Air'
+        };
+
+        const TENANT_MAP = {
+            'Sita Air': 'sita-air',
+            'Tara Air': 'tara-air',
+            'Summit Air': 'summit-air',
+            'Buddha Air': 'buddha-air',
+            'Yeti Airlines': 'yeti-airlines',
+            'Shree Airlines': 'shree-airlines',
+            'Danfe Air': 'danfe-air'
+        };
+
+        const SAFETY_PASSWORD = 'SitaSafety2024!';
+        const SAFETY_PASSWORD_ALT = 'password123';
+
+        // ============================================================
+        // STATE
+        // ============================================================
+        let isLoggingIn = false;
+        let tenantId = 'default';
+
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔐 Safety Officer Login Page Loaded');
+
+            const userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
+            tenantId = userData.tenantId || 'default';
+            
+            if (userData.role === 'safety_officer' && userData.email) {
+                console.log('✅ Already logged in, redirecting...');
+                window.location.href = `safety-dashboard.html?tenant=${tenantId}&role=safety`;
+                return;
+            }
+
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+
+            document.getElementById('email').addEventListener('input', function() {
+                detectAirline(this.value);
+            });
+
+            console.log('💡 Safety Officer Login ready');
+            console.log('💡 Try: safety@sitaair.com.np / SitaSafety2024!');
+            console.log('💡 Will redirect to safety-dashboard.html');
+        });
+
+        // ============================================================
+        // DETECT AIRLINE FROM EMAIL
+        // ============================================================
+        function detectAirline(email) {
+            const badge = document.getElementById('airlineName');
+            const emailLower = email.toLowerCase().trim();
+
+            for (const [key, airline] of Object.entries(AIRLINE_MAP)) {
+                if (emailLower === key || emailLower.includes(key.split('@')[1])) {
+                    badge.textContent = '✈️ ' + airline;
+                    badge.style.color = '#0a2e4a';
+                    return;
+                }
+            }
+
+            badge.textContent = '✈️ Select Your Airline';
+            badge.style.color = '#6c757d';
+        }
+
+        // ============================================================
+        // GET AIRLINE FROM EMAIL
+        // ============================================================
+        function getAirlineFromEmail(email) {
+            const emailLower = email.toLowerCase().trim();
+            
+            if (AIRLINE_MAP[emailLower]) {
+                return AIRLINE_MAP[emailLower];
+            }
+            
+            for (const [key, airline] of Object.entries(AIRLINE_MAP)) {
+                const domain = key.split('@')[1];
+                if (domain && emailLower.includes(domain)) {
+                    return airline;
+                }
+            }
+            
+            return null;
+        }
+
+        // ============================================================
+        // LOGIN HANDLER - FIXED REDIRECT TO safety-dashboard.html
+        // ============================================================
+        function handleLogin(event) {
+            event.preventDefault();
+            console.log('🔐 Login button clicked!');
+
+            const emailField = document.getElementById('email');
+            const passwordField = document.getElementById('password');
+            const errorEl = document.getElementById('errorMessage');
+            const successEl = document.getElementById('successMessage');
+            const loginBtn = document.getElementById('loginBtn');
+
+            errorEl.classList.remove('show');
+            successEl.classList.remove('show');
+
+            const email = emailField ? emailField.value.trim() : '';
+            const password = passwordField ? passwordField.value.trim() : '';
+
+            console.log('📧 Email:', email);
+            console.log('🔑 Password:', password ? '*****' : '(empty)');
+
+            if (!email || !password) {
+                errorEl.textContent = 'Please enter both email and password.';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            const airline = getAirlineFromEmail(email);
+            console.log('✈️ Airline detected:', airline);
+
+            if (!airline) {
+                errorEl.textContent = 'Email not found. Use safety@airline.com';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            const passwordValid = (password === SAFETY_PASSWORD || password === SAFETY_PASSWORD_ALT);
+            console.log('🔑 Password valid:', passwordValid);
+
+            if (!passwordValid) {
+                errorEl.textContent = 'Invalid password. Please try again.';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            // SUCCESS!
+            const tenantId = TENANT_MAP[airline];
+            console.log('✅ Login successful for:', airline);
+            console.log('📋 Tenant:', tenantId);
+
+            isLoggingIn = true;
+
+            successEl.textContent = `✅ Welcome ${airline} Safety Officer! Redirecting...`;
+            successEl.classList.add('show');
+
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = `<span class="spinner"></span> Logging in...`;
+
+            const userData = {
+                email: email,
+                name: airline + ' Safety Officer',
+                role: 'safety_officer',
+                airline: airline,
+                tenantId: tenantId,
+                language: 'en',
+                picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(airline)}&background=0a2e4a&color=fff&size=128`,
+                lastLogin: new Date().toISOString()
+            };
+
+            localStorage.setItem('sms_user_data', JSON.stringify(userData));
+            localStorage.setItem('sms_token', 'safety_token_' + Date.now());
+
+            console.log('✅ User data stored, redirecting to safety-dashboard.html...');
+
+            // ===== FIXED: Redirect to safety-dashboard.html =====
+            setTimeout(function() {
+                window.location.href = `safety-dashboard.html?tenant=${tenantId}&role=safety`;
+            }, 1500);
+
+            return false;
+        }
+
+        // ============================================================
+        // NAVIGATION
+        // ============================================================
+        function goBack() {
+            window.location.href = `index.html`;
+        }
+
+        // ============================================================
+        // KEYBOARD SHORTCUTS
+        // ============================================================
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const active = document.activeElement;
+                if (active && (active.id === 'email' || active.id === 'password')) {
+                    e.preventDefault();
+                    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+                }
+            }
+            if (e.key === 'b' || e.key === 'B') {
+                goBack();
+            }
+        });
+
+        // ============================================================
+        // EXPOSE FOR TESTING
+        // ============================================================
+        window.__safetyLogin = {
+            AIRLINE_MAP,
+            TENANT_MAP,
+            SAFETY_PASSWORD,
+            SAFETY_PASSWORD_ALT,
+            handleLogin,
+            goBack,
+            detectAirline,
+            getAirlineFromEmail
+        };
+
+        console.log('🔐 Safety Officer Login ready');
+        console.log('🔑 Password: ' + SAFETY_PASSWORD);
+        console.log('💡 Try: safety@sitaair.com.np / SitaSafety2024!');
+        console.log('🔀 Redirecting to: safety-dashboard.html');
+    </script>
+
+</body>
+</html>

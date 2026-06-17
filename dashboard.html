@@ -1,0 +1,693 @@
+<!--
+================================================================================
+FILE: SurveySMS/dashboard.html
+VERSION: 11.0
+REVISION DATE: 2026-06-17
+PURPOSE: User dashboard showing survey sessions and analytics access
+REVISED PURPOSE: Added Safety Officer role with direct analytics access
+AFFECTED: Airline users (participants & safety officers)
+================================================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title id="pageTitle">Dashboard - SMS Gap Analysis</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="css/global.css" />
+    <link rel="stylesheet" href="css/dashboard.css" />
+
+    <!-- External JS -->
+    <script src="js/translations.js"></script>
+    <script src="js/dashboard.js"></script>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <!-- ===== HEADER ===== -->
+        <header class="dashboard-header">
+            <div class="user-info" id="userInfo">
+                <img id="userAvatar" src="" alt="User" />
+                <div>
+                    <div class="name" id="userName">Loading...</div>
+                    <div class="email" id="userEmail">Loading...</div>
+                    <div class="role-badge" id="userRoleBadge" style="font-size:0.65rem;font-weight:600;padding:2px 10px;border-radius:50px;display:inline-block;margin-top:2px;"></div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <div class="tenant" id="tenantBadge">
+                    Organization
+                    <span class="demo-badge">DEMO</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> <span id="logoutBtnText">Logout</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ===== LANGUAGE TOGGLE ===== -->
+        <div class="dashboard-language">
+            <button class="lang-toggle-btn" id="langToggle" onclick="toggleLanguage()">🇳🇵 नेपाली</button>
+        </div>
+
+        <!-- ===== AIRLINE BRANDING ===== -->
+        <div class="airline-brand" id="airlineBrand">
+            <h2><i class="fas fa-plane"></i> <span id="airlineName">Safety Management Survey</span></h2>
+            <p id="airlinePurpose">Complete the survey to generate your comprehensive SMS gap analysis report.</p>
+        </div>
+
+        <!-- ===== ROLE-SPECIFIC WELCOME ===== -->
+        <div class="role-welcome" id="roleWelcome" style="background:linear-gradient(135deg,#e8f4f8,#d4e9f2);padding:15px 25px;border-radius:12px;margin-bottom:20px;border-left:5px solid #e8a838;display:none;">
+            <p id="roleWelcomeText" style="margin:0;font-size:1rem;color:#0a2e4a;">
+                <i class="fas fa-user-shield" style="color:#e8a838;"></i>
+                Welcome Safety Officer! You have direct access to analytics and reports.
+            </p>
+        </div>
+
+        <!-- ===== STATS ===== -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="icon"><i class="fas fa-clipboard-list"></i></div>
+                <div class="number" id="completedSessions">0</div>
+                <div class="label" id="labelCompleted">Completed Sessions</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon"><i class="fas fa-clock"></i></div>
+                <div class="number" id="currentSession">0</div>
+                <div class="label" id="labelCurrent">Current Session</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon"><i class="fas fa-check-circle"></i></div>
+                <div class="number" id="totalQuestions">0</div>
+                <div class="label" id="labelQuestions">Questions Answered</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon"><i class="fas fa-chart-line"></i></div>
+                <div class="number" id="progressPercent">0%</div>
+                <div class="label" id="labelProgress">Overall Progress</div>
+            </div>
+        </div>
+
+        <!-- ===== PROGRESS BAR ===== -->
+        <div class="progress-section">
+            <div class="progress-label">
+                <span id="progressLabel">Overall Survey Progress</span>
+                <span id="progressText">0% Complete</span>
+            </div>
+            <div class="progress-bar">
+                <div class="fill" id="progressFill" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <!-- ===== VIEW REPORT SECTION ===== -->
+        <div class="view-report-section" id="viewReportSection">
+            <h3><i class="fas fa-chart-bar"></i> <span id="viewReportTitle">View Your Gap Analysis Report</span></h3>
+            <p>
+                <span id="viewReportStatus">Complete at least one session to generate your report.</span>
+            </p>
+            <button class="btn-view-report" id="viewAnalyticsBtn" onclick="goToAnalytics()" disabled>
+                <i class="fas fa-chart-pie"></i>
+                <span id="viewReportBtnText">View Gap Analysis Report</span>
+                <span class="badge">NEW</span>
+            </button>
+        </div>
+
+        <!-- ===== SESSIONS ===== -->
+        <section class="sessions-section">
+            <h2><i class="fas fa-layer-group"></i> <span id="sessionsTitle">Survey Sessions</span></h2>
+            <p class="description" id="sessionsDescription">
+                Complete all 5 sessions to generate your comprehensive SMS gap analysis report.
+                Each session contains 24 questions and takes approximately 15-20 minutes.
+            </p>
+            <div class="sessions-grid" id="sessionsGrid">
+                <!-- Populated by JavaScript -->
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // ============================================================
+        // COMPLETE DASHBOARD LOGIC
+        // ============================================================
+
+        // ============================================================
+        // CONFIGURATION
+        // ============================================================
+        const SESSIONS = [
+            {
+                id: 1,
+                title: {
+                    en: 'Baseline Assessment',
+                    np: 'आधारभूत मूल्याङ्कन'
+                },
+                description: {
+                    en: 'Establish your safety management baseline across all 12 SMS elements.',
+                    np: 'सबै १२ एसएमएस तत्वहरूमा तपाईंको सुरक्षा व्यवस्थापन आधारभूत स्थापना गर्नुहोस्।'
+                },
+                icon: 'fa-flag-checkered',
+                questions: 24,
+                estimatedTime: '15-20 min'
+            },
+            {
+                id: 2,
+                title: {
+                    en: 'Follow-up Evaluation',
+                    np: 'अनुगमन मूल्याङ्कन'
+                },
+                description: {
+                    en: 'Evaluate progress and identify emerging safety trends.',
+                    np: 'प्रगति मूल्याङ्कन गर्नुहोस् र उदीयमान सुरक्षा प्रवृत्तिहरू पहिचान गर्नुहोस्।'
+                },
+                icon: 'fa-chart-line',
+                questions: 24,
+                estimatedTime: '15-20 min'
+            },
+            {
+                id: 3,
+                title: {
+                    en: 'Progress Review',
+                    np: 'प्रगति समीक्षा'
+                },
+                description: {
+                    en: 'Measure improvement and track corrective action effectiveness.',
+                    np: 'सुधार मापन गर्नुहोस् र सुधारात्मक कार्यको प्रभावकारिता ट्र्याक गर्नुहोस्।'
+                },
+                icon: 'fa-gauge-high',
+                questions: 24,
+                estimatedTime: '15-20 min'
+            },
+            {
+                id: 4,
+                title: {
+                    en: 'Advanced Assessment',
+                    np: 'उन्नत मूल्याङ्कन'
+                },
+                description: {
+                    en: 'Deep dive into complex safety management areas.',
+                    np: 'जटिल सुरक्षा व्यवस्थापन क्षेत्रहरूमा गहिरो अध्ययन गर्नुहोस्।'
+                },
+                icon: 'fa-microscope',
+                questions: 24,
+                estimatedTime: '15-20 min'
+            },
+            {
+                id: 5,
+                title: {
+                    en: 'Final Assessment',
+                    np: 'अन्तिम मूल्याङ्कन'
+                },
+                description: {
+                    en: 'Complete comprehensive gap analysis and generate final report.',
+                    np: 'व्यापक ग्याप विश्लेषण पूरा गर्नुहोस् र अन्तिम रिपोर्ट उत्पन्न गर्नुहोस्।'
+                },
+                icon: 'fa-trophy',
+                questions: 24,
+                estimatedTime: '15-20 min'
+            }
+        ];
+
+        // ============================================================
+        // AIRLINE PURPOSES
+        // ============================================================
+        const AIRLINE_PURPOSES = {
+            'sita-air': {
+                en: 'Sita Air is conducting this survey to assess our safety culture, identify strengths, and develop corrective action plans in alignment with ICAO Annex 19 requirements.',
+                np: 'सीता एयरले ICAO Annex 19 आवश्यकताहरू अनुरूप हाम्रो सुरक्षा संस्कृति मूल्याङ्कन गर्न, बलियो पक्षहरू पहिचान गर्न, र सुधारात्मक कार्य योजनाहरू विकास गर्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
+            },
+            'tara-air': {
+                en: 'Tara Air is conducting this survey to evaluate our safety management system and ensure compliance with international safety standards.',
+                np: 'तारा एयरले हाम्रो सुरक्षा व्यवस्थापन प्रणालीको मूल्याङ्कन गर्न र अन्तर्राष्ट्रिय सुरक्षा मापदण्डहरूको अनुपालन सुनिश्चित गर्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
+            },
+            'summit-air': {
+                en: 'Summit Air is conducting this survey to strengthen our safety culture and operational excellence through employee feedback.',
+                np: 'समिट एयरले कर्मचारी प्रतिक्रिया मार्फत हाम्रो सुरक्षा संस्कृति र परिचालन उत्कृष्टता बलियो बनाउन यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
+            },
+            'buddha-air': {
+                en: 'Buddha Air is conducting this survey to enhance our safety performance and maintain the highest standards of aviation safety.',
+                np: 'बुद्ध एयरले हाम्रो सुरक्षा प्रदर्शन बढाउन र विमानन सुरक्षाको उच्चतम मापदण्डहरू कायम राख्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
+            },
+            'yeti-airlines': {
+                en: 'Yeti Airlines is conducting this survey to assess our safety management practices and drive continuous improvement.',
+                np: 'यती एयरलाइन्सले हाम्रो सुरक्षा व्यवस्थापन अभ्यासहरूको मूल्याङ्कन गर्न र निरन्तर सुधारलाई अगाडि बढाउन यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
+            },
+            'shree-airlines': {
+                en: 'Shree Airlines is conducting this survey to evaluate our safety culture and risk management processes.',
+                np: 'श्री एयरलाइन्सले हाम्रो सुरक्षा संस्कृति र जोखिम व्यवस्थापन प्रक्रियाहरूको मूल्याङ्कन गर्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
+            },
+            'danfe-air': {
+                en: 'Danfe Air is conducting this survey to assess our safety management system and commitment to aviation safety excellence.',
+                np: 'दान्फे एयरले हाम्रो सुरक्षा व्यवस्थापन प्रणाली र विमानन सुरक्षा उत्कृष्टताप्रतिको प्रतिबद्धताको मूल्याङ्कन गर्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
+            }
+        };
+
+        // ============================================================
+        // GET LOCALIZED PURPOSE
+        // ============================================================
+        function getLocalizedPurpose(tenantId, lang) {
+            const purpose = AIRLINE_PURPOSES[tenantId];
+            if (purpose) {
+                return purpose[lang] || purpose['en'];
+            }
+            const defaultPurpose = {
+                en: 'This survey is being conducted to assess our safety management system and compliance with ICAO Annex 19.',
+                np: 'यो सर्वेक्षण हाम्रो सुरक्षा व्यवस्थापन प्रणाली र ICAO Annex 19 को अनुपालनको मूल्याङ्कन गर्न सञ्चालन गरिँदैछ।'
+            };
+            return defaultPurpose[lang] || defaultPurpose['en'];
+        }
+
+        // ============================================================
+        // STATE
+        // ============================================================
+        let userData = null;
+        let tenantId = null;
+        let airlineName = null;
+        let currentLang = 'en';
+        let userRole = 'participant';
+        let isSafetyOfficer = false;
+
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📊 Dashboard Loaded');
+
+            // Check authentication
+            userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
+
+            if (!userData.email) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Set variables
+            tenantId = userData.tenantId || 'default';
+            airlineName = userData.airline || userData.displayName || 'Aviation Organization';
+            currentLang = userData.language || 'en';
+            userRole = userData.role || 'participant';
+            isSafetyOfficer = (userRole === 'safety_officer');
+
+            // Update UI
+            updateUserUI();
+            updateRoleUI();
+            updateAirlineBranding();
+            updateStats();
+            renderSessions();
+            updateViewReportButton();
+            updateLanguageToggle();
+            updateTranslations();
+
+            // If safety officer, enable analytics button and show welcome message
+            if (isSafetyOfficer) {
+                document.getElementById('viewAnalyticsBtn').disabled = false;
+                document.getElementById('viewReportStatus').textContent = '📊 Welcome Safety Officer! View your airline\'s comprehensive gap analysis report.';
+                document.getElementById('viewReportBtnText').textContent = 'View Full Gap Analysis Report';
+                document.getElementById('roleWelcome').style.display = 'block';
+                document.getElementById('roleWelcomeText').innerHTML = `
+                    <i class="fas fa-user-shield" style="color:#e8a838;"></i>
+                    Welcome <strong>${airlineName} Safety Officer</strong>! You have direct access to analytics, gap analysis, and corrective action plans.
+                `;
+            }
+
+            console.log(`📊 Dashboard ready for: ${airlineName} (${userRole})`);
+            console.log(`💡 Safety Officer: ${isSafetyOfficer}`);
+        });
+
+        // ============================================================
+        // UI UPDATE FUNCTIONS
+        // ============================================================
+        function updateUserUI() {
+            document.getElementById('userAvatar').src = userData.picture || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(airlineName) + '&background=0a2e4a&color=fff&size=128';
+            document.getElementById('userName').textContent = userData.name || airlineName;
+            document.getElementById('userEmail').textContent = userData.email || '';
+            document.getElementById('tenantBadge').innerHTML = `
+                ${airlineName}
+                <span class="demo-badge">DEMO</span>
+            `;
+
+            // Show role badge
+            const roleBadge = document.getElementById('userRoleBadge');
+            if (isSafetyOfficer) {
+                roleBadge.textContent = '🛡️ SAFETY OFFICER';
+                roleBadge.style.background = '#e8a838';
+                roleBadge.style.color = '#0a2e4a';
+            } else {
+                roleBadge.textContent = '📝 PARTICIPANT';
+                roleBadge.style.background = '#d4edda';
+                roleBadge.style.color = '#155724';
+            }
+        }
+
+        function updateRoleUI() {
+            // Show/hide role-specific elements
+            const sessionsSection = document.querySelector('.sessions-section');
+            if (isSafetyOfficer) {
+                // Safety officer can still see sessions but with different messaging
+                sessionsSection.style.display = 'block';
+            }
+        }
+
+        function updateAirlineBranding() {
+            document.getElementById('airlineName').textContent = airlineName;
+            const lang = currentLang || 'en';
+            const purpose = getLocalizedPurpose(tenantId, lang);
+            document.getElementById('airlinePurpose').textContent = isSafetyOfficer ?
+                `Welcome Safety Officer! View and manage ${airlineName}'s SMS gap analysis report.` :
+                `${purpose}`;
+        }
+
+        function updateStats() {
+            const answers = JSON.parse(localStorage.getItem(`sms_${tenantId}_session_1_answers`) || '[]');
+            const answered = answers.filter(a => a !== null && a !== undefined).length;
+            const total = 24;
+            const progress = Math.round((answered / total) * 100);
+            const completed = parseInt(localStorage.getItem(`sms_${tenantId}_completed_sessions`) || '0');
+
+            document.getElementById('totalQuestions').textContent = total;
+            document.getElementById('answeredQuestions').textContent = answered;
+            document.getElementById('completionStatus').textContent = progress + '%';
+            document.getElementById('completedSessions').textContent = completed;
+            document.getElementById('currentSession').textContent = completed + (answered > 0 ? 1 : 0);
+
+            const progressEl = document.getElementById('progressPercent');
+            progressEl.textContent = progress + '%';
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressText').textContent = progress + '% Complete';
+
+            const statusEl = document.getElementById('surveyStatus');
+            const t = (key) => getTranslation(key, currentLang);
+            if (progress === 100) {
+                statusEl.textContent = '✅ ' + (t('complete') || 'Complete');
+                statusEl.style.color = '#28a745';
+                if (!isSafetyOfficer) {
+                    document.getElementById('viewAnalyticsBtn').disabled = false;
+                }
+            } else if (progress > 0) {
+                statusEl.textContent = '⏳ ' + (t('in_progress') || 'In Progress');
+                statusEl.style.color = '#e8a838';
+                if (!isSafetyOfficer) {
+                    document.getElementById('viewAnalyticsBtn').disabled = true;
+                }
+            } else {
+                statusEl.textContent = '⏳ ' + (t('pending') || 'Pending');
+                statusEl.style.color = '#6c757d';
+                if (!isSafetyOfficer) {
+                    document.getElementById('viewAnalyticsBtn').disabled = true;
+                }
+            }
+        }
+
+        function renderSessions() {
+            const grid = document.getElementById('sessionsGrid');
+            grid.innerHTML = '';
+
+            const completed = parseInt(localStorage.getItem(`sms_${tenantId}_completed_sessions`) || '0');
+            const current = parseInt(localStorage.getItem(`sms_${tenantId}_current_session`) || '0');
+            const t = (key) => getTranslation(key, currentLang);
+
+            // Check if no data exists
+            const hasData = localStorage.getItem(`sms_${tenantId}_session_1_answers`) !== null;
+
+            if (!hasData && completed === 0) {
+                grid.innerHTML = `
+                    <div class="no-data-message">
+                        <i class="fas fa-clipboard-list"></i>
+                        <h3>${t('no_data_title') || 'No Survey Data Found'}</h3>
+                        <p>${t('no_data_desc') || 'Click "Start Session" below to begin your first survey session.'}</p>
+                    </div>
+                `;
+            }
+
+            SESSIONS.forEach((session, index) => {
+                const sessionNumber = index + 1;
+                const isCompleted = sessionNumber <= completed;
+                const isCurrent = sessionNumber === completed + 1 && current > 0;
+                const isLocked = sessionNumber > completed + 1;
+                const isAvailable = sessionNumber === completed + 1 || isCompleted;
+
+                const card = document.createElement('div');
+                card.className = `session-card ${isLocked ? 'locked' : ''}`;
+
+                let statusClass = 'status-pending';
+                let statusText = t('not_started') || 'Not Started';
+                let statusIcon = 'fa-circle';
+
+                if (isCompleted) {
+                    statusClass = 'status-completed';
+                    statusText = t('completed') || 'Completed';
+                    statusIcon = 'fa-check-circle';
+                } else if (isCurrent) {
+                    statusClass = 'status-in-progress';
+                    statusText = t('in_progress') || 'In Progress';
+                    statusIcon = 'fa-spinner fa-spin';
+                } else if (isAvailable) {
+                    statusClass = 'status-pending';
+                    statusText = t('ready_to_start') || 'Ready to Start';
+                    statusIcon = 'fa-play-circle';
+                } else {
+                    statusClass = 'status-locked';
+                    statusText = t('locked') || 'Locked';
+                    statusIcon = 'fa-lock';
+                }
+
+                const sessionNumberClass = isCompleted ? 'completed' : (isCurrent ? 'in-progress' : '');
+
+                const titleText = session.title[currentLang] || session.title['en'];
+                const descText = session.description[currentLang] || session.description['en'];
+
+                let buttonText = t('start_session') || 'Start Session';
+                if (isCompleted) {
+                    buttonText = t('retake') || 'Retake';
+                } else if (isCurrent) {
+                    buttonText = t('continue') || 'Continue';
+                } else if (isAvailable) {
+                    buttonText = t('start_session') || 'Start Session';
+                } else {
+                    buttonText = t('locked') || 'Locked';
+                }
+
+                // For safety officer, show "View Data" instead of "Start Session" for completed sessions
+                if (isSafetyOfficer && isCompleted) {
+                    buttonText = '📊 View Data';
+                }
+
+                card.innerHTML = `
+                    <span class="session-number ${sessionNumberClass}">
+                        <i class="fas ${session.icon}"></i> ${t('session') || 'Session'} ${sessionNumber} of 5
+                    </span>
+                    <h3>${titleText}</h3>
+                    <p class="session-description">${descText}</p>
+                    <div class="meta">
+                        <span><i class="fas fa-question-circle"></i> ${session.questions} ${t('questions') || 'Questions'}</span>
+                        <span class="status">
+                            <i class="fas ${statusIcon}"></i>
+                            <span class="${statusClass}">${statusText}</span>
+                        </span>
+                    </div>
+                    <button class="btn btn-start ${isCompleted ? 'completed' : ''}" 
+                            onclick="${isSafetyOfficer && isCompleted ? `viewSessionData(${sessionNumber})` : `startSession(${sessionNumber})`}"
+                            ${!isAvailable && !isCompleted ? 'disabled' : ''}>
+                        <i class="fas ${isCompleted ? (isSafetyOfficer ? 'fa-chart-bar' : 'fa-redo') : (isCurrent ? 'fa-play' : (isAvailable ? 'fa-play' : 'fa-lock'))}"></i>
+                        ${buttonText}
+                    </button>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // ============================================================
+        // VIEW SESSION DATA (Safety Officer)
+        // ============================================================
+        function viewSessionData(sessionNumber) {
+            // Redirect to analytics with session filter
+            window.location.href = `analytics/airline-analytics.html?tenant=${tenantId}&session=${sessionNumber}`;
+        }
+
+        // ============================================================
+        // VIEW REPORT BUTTON
+        // ============================================================
+        function updateViewReportButton() {
+            const completed = parseInt(localStorage.getItem(`sms_${tenantId}_completed_sessions`) || '0');
+            const btn = document.getElementById('viewAnalyticsBtn');
+            const status = document.getElementById('viewReportStatus');
+            const t = (key) => getTranslation(key, currentLang);
+
+            if (isSafetyOfficer) {
+                btn.disabled = false;
+                status.textContent = '📊 Welcome Safety Officer! View your airline\'s comprehensive gap analysis report.';
+                btn.innerHTML = `
+                    <i class="fas fa-chart-pie"></i>
+                    ${t('view_full_report') || 'View Full Gap Analysis Report'}
+                    <span class="badge">${t('complete') || 'READY'}</span>
+                `;
+                btn.style.background = '#28a745';
+                return;
+            }
+
+            if (completed === 0) {
+                btn.disabled = true;
+                status.textContent = t('view_report_status') || 'Complete at least one session to generate your report.';
+            } else if (completed === 5) {
+                btn.disabled = false;
+                status.textContent = t('view_report_complete') || '🎉 All 5 sessions complete! View your comprehensive gap analysis report.';
+                btn.innerHTML = `
+                    <i class="fas fa-chart-pie"></i>
+                    ${t('view_full_report') || 'View Full Gap Analysis Report'}
+                    <span class="badge">${t('complete') || 'COMPLETE'}</span>
+                `;
+                btn.style.background = '#28a745';
+            } else {
+                btn.disabled = false;
+                status.textContent = t('view_report_progress') || `📊 ${completed} of 5 sessions complete. View your progress report.`;
+                btn.innerHTML = `
+                    <i class="fas fa-chart-pie"></i>
+                    ${t('view_report_btn') || 'View Gap Analysis Report'} (${completed}/5)
+                    <span class="badge">${t('progress') || 'PROGRESS'}</span>
+                `;
+                btn.style.background = '#0a2e4a';
+            }
+
+            document.getElementById('viewReportBtnText').textContent = t('view_report_btn') || 'View Gap Analysis Report';
+        }
+
+        // ============================================================
+        // LANGUAGE FUNCTIONS
+        // ============================================================
+        function updateLanguageToggle() {
+            const toggle = document.getElementById('langToggle');
+            if (toggle) {
+                toggle.textContent = currentLang === 'en' ? '🇳🇵 नेपाली' : '🇬🇧 English';
+            }
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'np' : 'en';
+            userData.language = currentLang;
+            localStorage.setItem('sms_user_data', JSON.stringify(userData));
+            updateLanguageToggle();
+            updateTranslations();
+            renderSessions();
+            updateViewReportButton();
+            updateStats();
+            updateAirlineBranding();
+        }
+
+        function updateTranslations() {
+            const t = (key) => getTranslation(key, currentLang);
+
+            document.title = t('dashboard_title') || 'Dashboard - SMS Gap Analysis';
+
+            document.getElementById('labelCompleted').textContent = t('completed_sessions') || 'Completed Sessions';
+            document.getElementById('labelCurrent').textContent = t('current_session') || 'Current Session';
+            document.getElementById('labelQuestions').textContent = t('questions_answered') || 'Questions Answered';
+            document.getElementById('labelProgress').textContent = t('overall_progress') || 'Overall Progress';
+
+            document.getElementById('progressLabel').textContent = t('overall_survey_progress') || 'Overall Survey Progress';
+            document.getElementById('progressText').textContent = t('progress_percent') || '0% Complete';
+
+            document.getElementById('sessionsTitle').textContent = t('survey_sessions') || 'Survey Sessions';
+            document.getElementById('sessionsDescription').textContent = t('sessions_description') || 'Complete all 5 sessions to generate your comprehensive SMS gap analysis report. Each session contains 24 questions and takes approximately 15-20 minutes.';
+
+            document.getElementById('viewReportTitle').textContent = t('view_report_title') || 'View Your Gap Analysis Report';
+            document.getElementById('viewReportBtnText').textContent = t('view_report_btn') || 'View Gap Analysis Report';
+
+            document.getElementById('logoutBtnText').textContent = t('logout') || 'Logout';
+        }
+
+        // ============================================================
+        // NAVIGATION
+        // ============================================================
+        function goToAnalytics() {
+            if (isSafetyOfficer) {
+                window.location.href = `analytics/airline-analytics.html?tenant=${tenantId}&role=safety&lang=${currentLang}`;
+            } else {
+                window.location.href = `analytics/airline-analytics.html?tenant=${tenantId}&lang=${currentLang}`;
+            }
+        }
+
+        function startSession(sessionNumber) {
+            const completed = parseInt(localStorage.getItem(`sms_${tenantId}_completed_sessions`) || '0');
+            const t = (key) => getTranslation(key, currentLang);
+
+            if (sessionNumber > completed + 1) {
+                alert(t('session_locked') || 'This session is locked. Please complete previous sessions first.');
+                return;
+            }
+
+            if (sessionNumber <= completed) {
+                if (!confirm(t('retake_confirm') || `You've already completed Session ${sessionNumber}. Would you like to retake it?`)) {
+                    return;
+                }
+                localStorage.removeItem(`sms_${tenantId}_session_${sessionNumber}_answers`);
+            }
+
+            localStorage.setItem(`sms_${tenantId}_current_session`, sessionNumber);
+            localStorage.setItem(`sms_${tenantId}_current_answers`, JSON.stringify([]));
+            localStorage.setItem(`sms_${tenantId}_session_start`, new Date().toISOString());
+
+            window.location.href = `survey/survey.html?tenant=${tenantId}&session=${sessionNumber}&lang=${currentLang}`;
+        }
+
+        function logout() {
+            const t = (key) => getTranslation(key, currentLang);
+            if (confirm(t('logout_confirm') || 'Are you sure you want to logout?')) {
+                localStorage.removeItem('sms_user_data');
+                localStorage.removeItem('sms_token');
+                window.location.href = `login.html?lang=${currentLang}`;
+            }
+        }
+
+        // ============================================================
+        // KEYBOARD SHORTCUTS
+        // ============================================================
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'l' || e.key === 'L') {
+                logout();
+            }
+            if (e.key === 's' || e.key === 'S') {
+                startSession(1);
+            }
+            if (e.key === 'v' || e.key === 'V') {
+                const btn = document.getElementById('viewAnalyticsBtn');
+                if (!btn.disabled) {
+                    goToAnalytics();
+                }
+            }
+        });
+
+        // ============================================================
+        // EXPOSE FOR TESTING
+        // ============================================================
+        window.__dashboard = {
+            userData,
+            tenantId,
+            airlineName,
+            currentLang,
+            userRole,
+            isSafetyOfficer,
+            SESSIONS,
+            startSession,
+            logout,
+            goToAnalytics,
+            toggleLanguage,
+            updateStats,
+            renderSessions,
+            updateViewReportButton,
+            viewSessionData
+        };
+
+        console.log('📊 Dashboard ready');
+        console.log(`✈️ Airline: ${airlineName}`);
+        console.log(`👤 Role: ${userRole}`);
+        console.log(`🛡️ Safety Officer: ${isSafetyOfficer}`);
+        console.log('💡 Press "S" to start survey, "V" to view analytics');
+    </script>
+
+</body>
+</html>

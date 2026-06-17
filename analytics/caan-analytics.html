@@ -1,0 +1,383 @@
+<!--
+================================================================================
+FILE: SurveySMS/analytics/caan-analytics.html
+VERSION: 2.0
+REVISION DATE: 2026-06-16
+PURPOSE: CAAN regulatory view - compliance report, not detailed CAP
+AFFECTED: CAAN users (demo@caan.gov.np)
+================================================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CAAN - Regulatory Analytics</title>
+    
+    <!-- External Libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js">
+    </script>
+    
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/analytics/shared.css" />
+    <link rel="stylesheet" href="../css/analytics/caan.css" />
+    
+    <!-- Local JS -->
+    <script src="../js/analytics/data-utils.js"></script>
+    <script src="../js/analytics/export-utils.js"></script>
+</head>
+<body>
+    <div class="analytics-container" id="analyticsContent">
+        <!-- ===== HEADER ===== -->
+        <header class="analytics-header">
+            <div>
+                <h1><i class="fas fa-gavel"></i> Regulatory Compliance Report <span class="badge" id="statusBadge">Loading...</span></h1>
+                <div class="subtitle"><i class="fas fa-calendar-alt"></i> Generated: <span id="generatedDate">Loading...</span> &bull; <i class="fas fa-building"></i> <span id="tenantName">CAAN (Regulator)</span></div>
+            </div>
+            <button class="btn btn-primary btn-back" onclick="goToExit()"><i class="fas fa-arrow-left"></i> Exit</button>
+        </header>
+
+        <!-- ===== ROLE BANNER ===== -->
+        <div class="role-banner">
+            <div class="role-info"><div class="role-icon"><i class="fas fa-user-shield"></i></div><div class="role-text"><span>CAAN (Regulator)</span><small>View-only access to all airlines (no data modification)</small></div></div>
+            <span class="role-badge caan">CAAN</span>
+        </div>
+
+        <!-- ===== DATE FILTER ===== -->
+        <div class="date-filter" id="dateFilter">
+            <div class="filter-header">
+                <div class="filter-label"><i class="fas fa-calendar-alt"></i><span>Survey Period Filter</span></div>
+                <div class="filter-controls">
+                    <div class="date-group"><label for="filterStartDate">From</label><input type="date" id="filterStartDate" /></div>
+                    <div class="date-group"><label for="filterEndDate">To</label><input type="date" id="filterEndDate" /></div>
+                    <button class="btn btn-primary" onclick="applyDateFilter()"><i class="fas fa-filter"></i> Apply</button>
+                    <button class="btn btn-secondary" onclick="clearDateFilter()"><i class="fas fa-times"></i> Clear</button>
+                    <span class="filter-status" id="filterStatus"></span>
+                </div>
+            </div>
+            <div class="preset-buttons">
+                <button class="btn-preset" onclick="setPresetFilter('week')">This Week</button>
+                <button class="btn-preset" onclick="setPresetFilter('month')">This Month</button>
+                <button class="btn-preset" onclick="setPresetFilter('quarter')">This Quarter</button>
+                <button class="btn-preset" onclick="setPresetFilter('year')">This Year</button>
+                <button class="btn-preset" onclick="setPresetFilter('all')">All Time</button>
+            </div>
+            <div class="filter-stats">
+                <span class="stat-item"><i class="fas fa-check-circle green"></i> On-Time: <span class="count green" id="onTimeCount">0</span></span>
+                <span class="stat-item"><i class="fas fa-clock orange"></i> Pending: <span class="count orange" id="pendingCount">0</span></span>
+                <span class="stat-item"><i class="fas fa-check-double blue"></i> Total: <span class="count blue" id="totalCompletedCount">0</span></span>
+                <span class="stat-item"><i class="fas fa-calendar-week"></i> Period: <span id="periodDisplay">All time</span></span>
+            </div>
+        </div>
+
+        <!-- ===== STATS ===== -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card blue"><div class="icon"><i class="fas fa-clipboard-list"></i></div><div class="number" id="totalSessions">0</div><div class="label">Total Sessions</div></div>
+            <div class="stat-card green"><div class="icon"><i class="fas fa-check-circle"></i></div><div class="number" id="completedSessions">0</div><div class="label">Completed</div></div>
+            <div class="stat-card orange"><div class="icon"><i class="fas fa-star"></i></div><div class="number" id="avgScore">0.0</div><div class="label">Industry Average / 5.0</div></div>
+            <div class="stat-card red"><div class="icon"><i class="fas fa-exclamation-triangle"></i></div><div class="number" id="criticalGaps">0</div><div class="label">Critical Gaps</div></div>
+        </div>
+
+        <!-- ===== COMPARISON TABLE ===== -->
+        <div class="comparison-table"><h3><i class="fas fa-table"></i> Airline Compliance Status</h3><div id="comparisonTableContent"></div></div>
+
+        <!-- ===== REGULATORY REPORT ===== -->
+        <div class="regulatory-report" id="regulatoryReport"></div>
+
+        <!-- ===== NO DATA ===== -->
+        <div id="noDataMessage" class="no-data" style="display:none;">
+            <i class="fas fa-clipboard-list"></i><h2>No Survey Data Available</h2><p>No airlines have completed the survey yet.</p>
+            <button class="btn btn-primary" onclick="goToExit()"><i class="fas fa-arrow-left"></i> Exit</button>
+        </div>
+
+        <!-- ===== EXPORT ===== -->
+        <div class="export-section">
+            <button class="btn-export pdf" onclick="exportPDF('analyticsContent', 'CAAN_Compliance_Report')"><i class="fas fa-file-pdf"></i> Export PDF</button>
+            <button class="btn-export excel" onclick="exportExcel(consolidatedData, 'CAAN_Compliance_Report', true)"><i class="fas fa-file-excel"></i> Export Excel</button>
+            <button class="btn-export print" onclick="window.print()"><i class="fas fa-print"></i> Print Report</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // STATE
+        // ============================================================
+        let tenantId = null;
+        let userData = null;
+        let allData = {};
+        let dateFilter = null;
+        let consolidatedData = null;
+
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🏛️ CAAN Regulatory Analytics Loaded');
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            tenantId = urlParams.get('tenant') || 'caan';
+            
+            userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
+            if (!userData.email || userData.role !== 'caan') {
+                window.location.href = '../login.html';
+                return;
+            }
+            
+            document.getElementById('generatedDate').textContent = new Date().toLocaleString();
+            
+            allData = loadAllAirlineData();
+            
+            if (Object.keys(allData).length === 0) {
+                document.getElementById('noDataMessage').style.display = 'block';
+                document.getElementById('statsGrid').style.display = 'none';
+                document.getElementById('dateFilter').style.display = 'none';
+                document.getElementById('comparisonTable').style.display = 'none';
+                document.getElementById('regulatoryReport').style.display = 'none';
+                document.getElementById('statusBadge').textContent = '⏳ No Data';
+                document.getElementById('statusBadge').style.background = '#6c757d';
+                document.getElementById('statusBadge').style.color = 'white';
+                return;
+            }
+            
+            renderView();
+            updateComplianceStats();
+            
+            document.getElementById('statusBadge').textContent = '🏛️ CAAN View';
+            document.getElementById('statusBadge').style.background = '#004085';
+            document.getElementById('statusBadge').style.color = 'white';
+        });
+
+        function renderView() {
+            let filteredData = allData;
+            if (dateFilter) {
+                const startDate = dateFilter.startDate || null;
+                const endDate = dateFilter.endDate || null;
+                filteredData = {};
+                for (const key in allData) {
+                    const airline = allData[key];
+                    const completionDate = airline.completionDate || getAirlineCompletionDate(key);
+                    if (completionDate && isDateInRange(completionDate, startDate, endDate)) {
+                        filteredData[key] = airline;
+                    }
+                }
+            }
+            
+            consolidatedData = consolidateAirlineData(filteredData);
+            
+            if (!consolidatedData) {
+                document.getElementById('noDataMessage').style.display = 'block';
+                document.getElementById('statsGrid').style.display = 'none';
+                document.getElementById('dateFilter').style.display = 'none';
+                document.getElementById('comparisonTable').style.display = 'none';
+                document.getElementById('regulatoryReport').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('noDataMessage').style.display = 'none';
+            document.getElementById('statsGrid').style.display = 'grid';
+            document.getElementById('dateFilter').style.display = 'block';
+            document.getElementById('comparisonTable').style.display = 'block';
+            document.getElementById('regulatoryReport').style.display = 'block';
+            
+            renderStats();
+            renderComparisonTable();
+            renderRegulatoryReport();
+        }
+
+        function renderStats() {
+            document.getElementById('totalSessions').textContent = consolidatedData.totalSessions || 0;
+            document.getElementById('completedSessions').textContent = consolidatedData.sessionsCompleted || 0;
+            document.getElementById('avgScore').textContent = (consolidatedData.overallAverage || 0).toFixed(1);
+            document.getElementById('criticalGaps').textContent = consolidatedData.criticalGaps || 0;
+        }
+
+        function renderComparisonTable() {
+            const container = document.getElementById('comparisonTableContent');
+            if (!consolidatedData.airlineData || consolidatedData.airlineData.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:#6c757d;padding:20px;">No airline data available.</p>';
+                return;
+            }
+
+            let html = `<table><thead><tr><th>Airline</th><th>Overall Score</th><th>Policy</th><th>Risk Mgmt</th><th>Assurance</th><th>Promotion</th><th>Critical Gaps</th><th>Completed</th><th>Status</th></tr></thead><tbody>`;
+            const sorted = [...consolidatedData.airlineData].sort((a, b) => b.overallAverage - a.overallAverage);
+            sorted.forEach(airline => {
+                const score = airline.overallAverage || 0;
+                const scoreClass = score >= 4.0 ? 'high' : (score >= 3.0 ? 'medium' : 'low');
+                const status = score >= 4.0 ? '✅ Compliant' : (score >= 3.0 ? '⚠️ Moderate' : '🔴 Critical');
+                const dateLabel = airline.completionDate ? new Date(airline.completionDate).toLocaleDateString() : 'Pending';
+                html += `<tr><td><a href="airline-analytics.html?tenant=${airline.tenantId}" class="airline-link">${airline.name}</a></td><td><span class="score-badge ${scoreClass}">${score.toFixed(1)}</span></td><td>${(airline.pillarAverages.Policy || 0).toFixed(1)}</td><td>${(airline.pillarAverages['Risk Management'] || 0).toFixed(1)}</td><td>${(airline.pillarAverages.Assurance || 0).toFixed(1)}</td><td>${(airline.pillarAverages.Promotion || 0).toFixed(1)}</td><td>${airline.criticalGaps || 0}</td><td>${dateLabel}</td><td>${status}</td></tr>`;
+            });
+            html += `</tbody></table><div style="margin-top:10px;font-size:0.8rem;color:#6c757d;text-align:center;">Click on any airline name to view detailed analytics</div>`;
+            container.innerHTML = html;
+        }
+
+        function renderRegulatoryReport() {
+            const container = document.getElementById('regulatoryReport');
+            if (!consolidatedData.airlineData || consolidatedData.airlineData.length === 0) {
+                container.innerHTML = `<h3><i class="fas fa-gavel"></i> Regulatory Report</h3><p style="color:#6c757d;">No data available for regulatory report.</p>`;
+                return;
+            }
+
+            const airlines = consolidatedData.airlineData;
+            let compliant = 0, moderate = 0, critical = 0;
+            let elementWeaknesses = {};
+
+            airlines.forEach(airline => {
+                const score = airline.overallAverage || 0;
+                if (score >= 4.0) compliant++;
+                else if (score >= 3.0) moderate++;
+                else critical++;
+                if (airline.gaps) {
+                    for (const key in airline.gaps) {
+                        const gap = airline.gaps[key];
+                        if (gap.gap > 1.0) {
+                            if (!elementWeaknesses[key]) elementWeaknesses[key] = [];
+                            elementWeaknesses[key].push(airline.name);
+                        }
+                    }
+                }
+            });
+
+            const total = airlines.length;
+            const sortedWeaknesses = Object.keys(elementWeaknesses).sort((a, b) => elementWeaknesses[b].length - elementWeaknesses[a].length).slice(0, 3);
+
+            let html = `
+                <h3><i class="fas fa-flag"></i> Industry Compliance Summary</h3>
+                <div class="summary-grid">
+                    <div class="summary-item"><div class="number green">${compliant}</div><div class="label">Compliant Airlines</div></div>
+                    <div class="summary-item"><div class="number orange">${moderate}</div><div class="label">Moderate Risk</div></div>
+                    <div class="summary-item"><div class="number red">${critical}</div><div class="label">Critical Risk</div></div>
+                    <div class="summary-item"><div class="number blue">${total}</div><div class="label">Total Airlines</div></div>
+                </div>
+                <div class="avg-score">Industry Average Score: ${(consolidatedData.overallAverage || 0).toFixed(1)} / 5.0</div>
+            `;
+
+            if (sortedWeaknesses.length > 0) {
+                html += `<h4 style="margin-top:20px;color:#856404;"><i class="fas fa-exclamation-triangle"></i> Systemic Issues Identified</h4><ul class="issue-list">`;
+                sortedWeaknesses.forEach((key, index) => {
+                    const elementName = ELEMENT_NAMES[key] || `Element ${key}`;
+                    const affected = elementWeaknesses[key].length;
+                    html += `<li><strong>${index + 1}. ${elementName}</strong><span class="affected">${affected} airline${affected > 1 ? 's' : ''} affected</span><span class="airlines">Affected: ${elementWeaknesses[key].join(', ')}</span></li>`;
+                });
+                html += `</ul>`;
+            }
+
+            html += `
+                <div class="recommendations-box">
+                    <h4><i class="fas fa-gavel"></i> Regulatory Recommendations</h4>
+                    <ul>
+                        ${critical > 0 ? `<li><i class="fas fa-arrow-right" style="color:#dc3545;"></i><strong>Urgent:</strong> Schedule compliance audit for ${critical} airline(s) with critical risk scores</li>` : ''}
+                        ${compliant > 0 ? `<li><i class="fas fa-arrow-right" style="color:#28a745;"></i><strong>Recognition:</strong> Acknowledge ${compliant} airline(s) for exemplary safety performance</li>` : ''}
+                        ${sortedWeaknesses.length > 0 ? `<li><i class="fas fa-arrow-right" style="color:#e8a838;"></i><strong>Advisory:</strong> Issue industry advisory on ${sortedWeaknesses.length} systemic area(s) requiring attention</li>` : ''}
+                        <li><i class="fas fa-arrow-right" style="color:#0a2e4a;"></i><strong>Monitoring:</strong> Continue monitoring moderate risk airlines for improvement trends</li>
+                    </ul>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // ============================================================
+        // DATE FILTER FUNCTIONS
+        // ============================================================
+        function isDateInRange(dateString, startDate, endDate) {
+            if (!dateString) return false;
+            const date = new Date(dateString);
+            const start = startDate ? new Date(startDate) : null;
+            const end = endDate ? new Date(endDate) : null;
+            if (start && date < start) return false;
+            if (end && date > end) return false;
+            return true;
+        }
+
+        function applyDateFilter() {
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+            if (!startDate && !endDate) { alert('Please select a date range.'); return; }
+            dateFilter = { startDate, endDate };
+            let rangeText = 'All time';
+            if (startDate && endDate) rangeText = `${startDate} to ${endDate}`;
+            else if (startDate) rangeText = `From ${startDate}`;
+            else if (endDate) rangeText = `Up to ${endDate}`;
+            document.getElementById('periodDisplay').textContent = rangeText;
+            document.getElementById('filterStatus').textContent = rangeText !== 'All time' ? `✅ Filtered: ${rangeText}` : '';
+            renderView();
+            updateComplianceStats();
+        }
+
+        function clearDateFilter() {
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            dateFilter = null;
+            document.getElementById('periodDisplay').textContent = 'All time';
+            document.getElementById('filterStatus').textContent = '';
+            document.querySelectorAll('.btn-preset').forEach(btn => btn.classList.remove('active'));
+            renderView();
+            updateComplianceStats();
+        }
+
+        function setPresetFilter(preset) {
+            const today = new Date();
+            const startInput = document.getElementById('filterStartDate');
+            const endInput = document.getElementById('filterEndDate');
+            let startDate = null, endDate = null;
+            switch(preset) {
+                case 'week':
+                    startDate = new Date(today);
+                    startDate.setDate(today.getDate() - today.getDay());
+                    endDate = new Date(today);
+                    endDate.setDate(today.getDate() + (6 - today.getDay()));
+                    break;
+                case 'month':
+                    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                    endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    break;
+                case 'quarter':
+                    const quarter = Math.floor(today.getMonth() / 3);
+                    startDate = new Date(today.getFullYear(), quarter * 3, 1);
+                    endDate = new Date(today.getFullYear(), quarter * 3 + 3, 0);
+                    break;
+                case 'year':
+                    startDate = new Date(today.getFullYear(), 0, 1);
+                    endDate = new Date(today.getFullYear(), 11, 31);
+                    break;
+                case 'all': default: break;
+            }
+            startInput.value = startDate ? startDate.toISOString().split('T')[0] : '';
+            endInput.value = endDate ? endDate.toISOString().split('T')[0] : '';
+            document.querySelectorAll('.btn-preset').forEach(btn => btn.classList.remove('active'));
+            if (preset !== 'all') {
+                document.querySelector(`.btn-preset[onclick*="${preset}"]`)?.classList.add('active');
+            }
+            if (preset === 'all') clearDateFilter();
+            else applyDateFilter();
+        }
+
+        function updateComplianceStats() {
+            const airlines = allData;
+            let onTime = 0;
+            let totalCompleted = 0;
+            const startDate = dateFilter?.startDate || null;
+            const endDate = dateFilter?.endDate || null;
+            for (const key in airlines) {
+                const airline = airlines[key];
+                totalCompleted++;
+                const completionDate = airline.completionDate || getAirlineCompletionDate(key);
+                if (completionDate && isDateInRange(completionDate, startDate, endDate)) { onTime++; }
+            }
+            document.getElementById('onTimeCount').textContent = onTime;
+            document.getElementById('pendingCount').textContent = Math.max(0, Object.keys(airlines).length - onTime);
+            document.getElementById('totalCompletedCount').textContent = totalCompleted;
+        }
+
+        function goToExit() {
+            window.location.href = '../thankyou.html';
+        }
+    </script>
+</body>
+</html>

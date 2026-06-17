@@ -1,0 +1,144 @@
+<!--
+================================================================================
+FILE: SurveySMS/admin.html
+VERSION: 10.0
+REVISION DATE: 2026-06-17
+PURPOSE: Admin panel for managing survey data
+REVISED PURPOSE: Added English/Nepali language support, external CSS/JS
+AFFECTED: Admin users only (admin@surveysms.com / survey2026)
+================================================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title id="pageTitle">Admin Panel - SurveySMS</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="css/global.css" />
+    <link rel="stylesheet" href="css/admin.css" />
+
+    <!-- External JS -->
+    <script src="js/translations.js"></script>
+    <script src="js/admin.js"></script>
+</head>
+<body>
+
+    <div class="admin-wrapper">
+        <div class="admin-container">
+
+            <!-- ===== HEADER ===== -->
+            <div class="admin-header">
+                <div class="logo">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h1>
+                    <span id="adminTitle">Admin Panel</span>
+                    <span class="badge" id="adminBadge">RESTRICTED</span>
+                </h1>
+                <p id="adminSubtitle">Manage survey data and generate dummy responses</p>
+            </div>
+
+            <!-- ===== LANGUAGE TOGGLE ===== -->
+            <div class="admin-language">
+                <button class="lang-toggle-btn" id="langToggle" onclick="toggleLanguage()">🇳🇵 नेपाली</button>
+            </div>
+
+            <!-- ===== LOGIN FORM ===== -->
+            <div id="loginSection">
+                <form class="login-form" id="loginForm" onsubmit="return handleLogin(event)">
+                    <div class="login-error" id="loginError">Invalid credentials. Please try again.</div>
+                    <div class="form-group">
+                        <label for="adminPassword" id="loginLabel"><i class="fas fa-lock"></i> Admin Password</label>
+                        <input type="password" id="adminPassword" placeholder="Enter admin password" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;">
+                        <i class="fas fa-sign-in-alt"></i> <span id="loginBtnText">Login</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- ===== ADMIN PANEL ===== -->
+            <div id="adminPanel">
+                <!-- Status Messages -->
+                <div class="status-msg" id="statusMsg"></div>
+
+                <!-- Actions -->
+                <div class="admin-actions">
+                    <!-- Wipe Data -->
+                    <div class="action-card">
+                        <div class="icon danger"><i class="fas fa-trash-alt"></i></div>
+                        <h3 id="actionWipeTitle">Wipe All Survey Data</h3>
+                        <p id="actionWipeDesc">Completely remove all survey responses, sessions, and user data from localStorage.</p>
+                        <button class="btn btn-danger" onclick="wipeData()" id="actionWipeBtn">
+                            <i class="fas fa-trash"></i> Wipe All Data
+                        </button>
+                    </div>
+
+                    <!-- Generate Dummy Data -->
+                    <div class="action-card">
+                        <div class="icon success"><i class="fas fa-database"></i></div>
+                        <h3 id="actionGenerateTitle">Generate Dummy Survey Responses</h3>
+                        <p id="actionGenerateDesc">Generate realistic survey responses for multiple airlines with random scores.</p>
+                        <button class="btn btn-success" onclick="generateDummyData()" id="actionGenerateBtn">
+                            <i class="fas fa-play"></i> Generate Dummy Data
+                        </button>
+                    </div>
+
+                    <!-- View Data Stats -->
+                    <div class="action-card">
+                        <div class="icon warning"><i class="fas fa-chart-simple"></i></div>
+                        <h3 id="actionStatsTitle">Data Statistics</h3>
+                        <p id="actionStatsDesc">View current data statistics including total sessions and airlines.</p>
+                        <button class="btn btn-warning" onclick="showStats()" id="actionStatsBtn">
+                            <i class="fas fa-chart-bar"></i> View Stats
+                        </button>
+                    </div>
+
+                    <!-- Reset Demo User -->
+                    <div class="action-card">
+                        <div class="icon"><i class="fas fa-user-refresh"></i></div>
+                        <h3 id="actionResetTitle">Reset Demo User</h3>
+                        <p id="actionResetDesc">Reset the demo user account to start fresh with a new session.</p>
+                        <button class="btn btn-primary" onclick="resetDemoUser()" id="actionResetBtn">
+                            <i class="fas fa-user"></i> Reset Demo User
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Airlines List -->
+                <div class="airlines-section">
+                    <h4><i class="fas fa-plane"></i> <span id="airlinesTitle">Available Airlines</span></h4>
+                    <div class="airlines-list" id="airlinesList">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="admin-footer">
+                    <i class="fas fa-shield-alt" style="color: var(--secondary);"></i>
+                    <span id="footerText">SurveySMS Admin Panel</span> &bull;
+                    <a href="dashboard.html?tenant=default" id="footerBack">Back to Dashboard</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // ADDITIONAL: Handle page load
+        // ============================================================
+        console.log('🔐 Admin Panel ready with English/Nepali support');
+        console.log('💡 Click the language toggle to switch between English and Nepali');
+        console.log('🔑 Password: survey2026');
+        console.log('✈️ Airlines: Sita Air, Tara Air, Summit Air, Buddha Air, Yeti Airlines, Shree Airlines, Danfe Air');
+    </script>
+
+</body>
+</html>

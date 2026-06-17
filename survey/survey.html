@@ -1,0 +1,102 @@
+<!--
+================================================================================
+FILE: SurveySMS/survey/survey.html
+VERSION: 11.0
+REVISION DATE: 2026-06-17
+PURPOSE: Survey page - 24 questions covering 12 SMS elements
+REVISED PURPOSE: Fixed page title, starts at Question 1, improved language support
+AFFECTED: Airline users taking the survey
+================================================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title id="pageTitle">Safety Management Survey</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/survey.css" />
+
+    <!-- External JS -->
+    <script src="../js/translations.js"></script>
+    <script src="../js/survey.js"></script>
+</head>
+<body>
+
+    <div class="survey-container">
+        <!-- ===== HEADER ===== -->
+        <header class="survey-header">
+            <div>
+                <div class="survey-title">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span id="surveyTitle">Safety Management Survey</span> -
+                    <span class="airline-name" id="airlineName">Loading...</span>
+                    <span class="session-badge" id="sessionBadge">Demo Session</span>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span class="progress-text" id="progressText">Question 1 of 24</span>
+                <button class="exit-btn" onclick="exitSurvey()">
+                    <i class="fas fa-times"></i> <span id="exitBtnText">Exit</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ===== LANGUAGE TOGGLE ===== -->
+        <div class="language-selector">
+            <button class="lang-toggle-btn" id="langToggle" onclick="toggleLanguage()">🇳🇵 नेपाली</button>
+        </div>
+
+        <!-- ===== AIRLINE PURPOSE ===== -->
+        <div class="airline-purpose">
+            <p id="airlinePurpose">
+                <i class="fas fa-info-circle"></i>
+                <span id="purposeText">Loading purpose...</span>
+            </p>
+        </div>
+
+        <!-- ===== PROGRESS ===== -->
+        <div class="progress-container">
+            <div class="progress-label">
+                <span id="progressLabel">Survey Progress</span>
+                <span id="percentText">0%</span>
+            </div>
+            <div class="progress-track">
+                <div class="fill" id="progressFill" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <!-- ===== QUESTION AREA ===== -->
+        <div id="questionArea"></div>
+
+        <!-- ===== ANSWERED COUNT ===== -->
+        <div class="answered-count" id="answeredCount">0 of 24 answered</div>
+
+        <!-- ===== NAVIGATION ===== -->
+        <div class="nav-buttons" id="navButtons">
+            <button class="btn btn-secondary" id="prevBtn" onclick="prevQuestion()" disabled>
+                <i class="fas fa-arrow-left"></i> <span id="prevBtnText">Previous</span>
+            </button>
+            <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" disabled>
+                <span id="nextBtnText">Next</span> <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // ADDITIONAL: Handle page load
+        // ============================================================
+        console.log('📝 Survey ready with English/Nepali support');
+        console.log('💡 Click the language toggle to switch between English and Nepali');
+        console.log('💡 Survey starts at Question 1 (fresh start)');
+    </script>
+
+</body>
+</html>

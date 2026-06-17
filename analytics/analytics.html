@@ -1,0 +1,2572 @@
+<!--
+================================================================================
+FILE: SurveySMS/analytics/analytics.html
+VERSION: 8.0
+REVISION DATE: 2026-06-16
+PURPOSE: Analytics dashboard showing SMS gap analysis with charts and reports
+REVISED PURPOSE: Added CAAN date filter for survey period tracking and compliance monitoring
+AFFECTED: CAAN users viewing consolidated analytics
+================================================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics Dashboard - SMS Gap Analysis</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+    
+    <!-- html2pdf for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js">
+    </script>
+    
+    <style>
+        /* ===== CSS Variables & Reset ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .analytics-container { max-width: 1400px; margin: 0 auto; }
+        
+        /* ===== Header ===== */
+        .analytics-header {
+            background: linear-gradient(135deg, #0a2e4a, #1a4a6a);
+            color: white;
+            padding: 25px 35px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .analytics-header h1 {
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .analytics-header h1 i { color: #e8a838; }
+        
+        .analytics-header .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .analytics-header .badge {
+            background: #e8a838;
+            color: #0a2e4a;
+            padding: 6px 18px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        
+        .btn-back {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .btn-back:hover { background: rgba(255, 255, 255, 0.25); }
+        
+        /* ===== Role Banner ===== */
+        .role-banner {
+            background: white;
+            padding: 12px 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .role-banner .role-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .role-banner .role-info .role-icon { font-size: 1.5rem; color: #e8a838; }
+        .role-banner .role-info .role-text { font-weight: 600; color: #0a2e4a; }
+        .role-banner .role-info .role-text small {
+            font-weight: 400;
+            color: #6c757d;
+            font-size: 0.85rem;
+            display: block;
+        }
+        
+        .role-badge {
+            padding: 4px 14px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .role-badge.airline { background: #d4edda; color: #155724; }
+        .role-badge.caan { background: #cce5ff; color: #004085; }
+        .role-badge.admin { background: #f8d7da; color: #721c24; }
+        
+        /* ===== Admin Toggle ===== */
+        .admin-toggle {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .admin-toggle.visible { display: flex; }
+        
+        .admin-toggle .toggle-label {
+            font-weight: 600;
+            color: #0a2e4a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .admin-toggle .toggle-label i { color: #e8a838; }
+        
+        .admin-toggle .airline-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .admin-toggle .airline-selector select {
+            padding: 8px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: white;
+            min-width: 200px;
+        }
+        .admin-toggle .airline-selector select:focus {
+            border-color: #0a2e4a;
+            outline: none;
+        }
+        .admin-toggle .airline-selector .btn-filter {
+            background: #0a2e4a;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .admin-toggle .airline-selector .btn-filter:hover {
+            background: #1a4a6a;
+            transform: translateY(-2px);
+        }
+        
+        /* ===== CAAN Date Filter ===== */
+        .date-filter {
+            background: white;
+            padding: 18px 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: none;
+        }
+        
+        .date-filter.visible { display: block; }
+        
+        .date-filter .filter-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .date-filter .filter-label {
+            font-weight: 600;
+            color: #0a2e4a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .date-filter .filter-label i { color: #e8a838; }
+        
+        .date-filter .filter-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .date-filter .filter-controls .date-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .date-filter .filter-controls .date-group label {
+            font-size: 0.7rem;
+            color: #6c757d;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .date-filter .filter-controls .date-group input {
+            padding: 6px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .date-filter .filter-controls .date-group input:focus {
+            border-color: #0a2e4a;
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(10, 46, 74, 0.1);
+        }
+        
+        .date-filter .filter-controls .btn-filter {
+            background: #0a2e4a;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .date-filter .filter-controls .btn-filter:hover {
+            background: #1a4a6a;
+            transform: translateY(-2px);
+        }
+        
+        .date-filter .filter-controls .btn-filter.clear {
+            background: #6c757d;
+        }
+        
+        .date-filter .filter-controls .btn-filter.clear:hover {
+            background: #5a6268;
+        }
+        
+        .date-filter .filter-status {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-left: 5px;
+        }
+        
+        .date-filter .filter-stats {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e9ecef;
+            font-size: 0.85rem;
+            color: #495057;
+        }
+        
+        .date-filter .filter-stats .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .date-filter .filter-stats .stat-item .count {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .date-filter .filter-stats .stat-item .count.green { color: #28a745; }
+        .date-filter .filter-stats .stat-item .count.orange { color: #e8a838; }
+        .date-filter .filter-stats .stat-item .count.red { color: #dc3545; }
+        .date-filter .filter-stats .stat-item .count.blue { color: #0a2e4a; }
+        
+        .date-filter .filter-stats .stat-item i { font-size: 0.9rem; }
+        .date-filter .filter-stats .stat-item i.green { color: #28a745; }
+        .date-filter .filter-stats .stat-item i.orange { color: #e8a838; }
+        .date-filter .filter-stats .stat-item i.red { color: #dc3545; }
+        .date-filter .filter-stats .stat-item i.blue { color: #0a2e4a; }
+        
+        .date-filter .preset-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .date-filter .preset-buttons .btn-preset {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 4px 14px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #495057;
+        }
+        
+        .date-filter .preset-buttons .btn-preset:hover {
+            background: #0a2e4a;
+            color: white;
+            border-color: #0a2e4a;
+        }
+        
+        .date-filter .preset-buttons .btn-preset.active {
+            background: #0a2e4a;
+            color: white;
+            border-color: #0a2e4a;
+        }
+        
+        /* ===== Stats Grid ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: white;
+            padding: 18px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+        .stat-card .number { font-size: 2rem; font-weight: 700; color: #0a2e4a; }
+        .stat-card .label { color: #6c757d; font-size: 0.8rem; margin-top: 5px; }
+        .stat-card .icon { font-size: 1.3rem; color: #e8a838; margin-bottom: 5px; }
+        .stat-card.green .number { color: #28a745; }
+        .stat-card.red .number { color: #dc3545; }
+        .stat-card.orange .number { color: #fd7e14; }
+        .stat-card.blue .number { color: #0a2e4a; }
+        
+        /* ===== Pillar Summary with Pie Chart ===== */
+        .pillar-summary-wrapper {
+            display: flex;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        .pillar-summary-left {
+            flex: 0 0 60%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .pillar-summary-right {
+            flex: 0 0 40%;
+        }
+        .pillar-chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .pillar-chart-card h3 {
+            color: #0a2e4a;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: center;
+            justify-content: center;
+        }
+        .pillar-chart-card h3 i { color: #e8a838; }
+        .pillar-chart-card .chart-container {
+            position: relative;
+            height: 220px;
+            width: 100%;
+            max-width: 280px;
+            margin: 0 auto;
+        }
+        .pillar-legend {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .pillar-legend .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: #495057;
+        }
+        .pillar-legend .legend-item .color-box {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        .pillar-legend .legend-item .score { font-weight: 700; color: #0a2e4a; }
+        
+        .pillar-card {
+            background: white;
+            padding: 18px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-top: 5px solid #0a2e4a;
+            transition: all 0.3s ease;
+        }
+        .pillar-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+        .pillar-card .pillar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .pillar-card .pillar-header h4 { color: #0a2e4a; font-size: 0.95rem; }
+        .pillar-card .pillar-header .pillar-score { font-size: 1.4rem; font-weight: 700; }
+        .pillar-card .pillar-header .pillar-score.good { color: #28a745; }
+        .pillar-card .pillar-header .pillar-score.average { color: #fd7e14; }
+        .pillar-card .pillar-header .pillar-score.poor { color: #dc3545; }
+        .pillar-card .pillar-elements { font-size: 0.8rem; color: #6c757d; }
+        .pillar-card .pillar-elements span {
+            display: inline-block;
+            background: #f8f9fa;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin: 2px;
+            font-size: 0.7rem;
+        }
+        .pillar-card .pillar-status {
+            margin-top: 8px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .pillar-card .pillar-status.strong { background: #d4edda; color: #155724; }
+        .pillar-card .pillar-status.moderate { background: #fff3cd; color: #856404; }
+        .pillar-card .pillar-status.weak { background: #f8d7da; color: #721c24; }
+        .pillar-card.pillar-policy { border-top-color: #2e7daf; }
+        .pillar-card.pillar-risk { border-top-color: #e8a838; }
+        .pillar-card.pillar-assurance { border-top-color: #28a745; }
+        .pillar-card.pillar-promotion { border-top-color: #dc3545; }
+        
+        /* ===== Comparison Table ===== */
+        .comparison-table {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+            overflow-x: auto;
+        }
+        .comparison-table h3 {
+            color: #0a2e4a;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .comparison-table h3 i { color: #e8a838; }
+        .comparison-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .comparison-table table th {
+            background: #0a2e4a;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .comparison-table table td {
+            padding: 10px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .comparison-table table tr:hover td { background: #f8f9fa; }
+        .comparison-table table .score-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        .comparison-table table .score-badge.high { background: #d4edda; color: #155724; }
+        .comparison-table table .score-badge.medium { background: #fff3cd; color: #856404; }
+        .comparison-table table .score-badge.low { background: #f8d7da; color: #721c24; }
+        .comparison-table .airline-link {
+            color: #0a2e4a;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .comparison-table .airline-link:hover {
+            text-decoration: underline;
+            color: #e8a838;
+        }
+        
+        /* ===== Charts Grid ===== */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .chart-card h3 {
+            color: #0a2e4a;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .chart-card h3 i { color: #e8a838; }
+        .chart-card .chart-container { position: relative; height: 280px; }
+        
+        /* ===== Gap Analysis ===== */
+        .gap-analysis {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+        .gap-analysis h3 {
+            color: #0a2e4a;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .gap-analysis h3 i { color: #e8a838; }
+        .gap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        .gap-item {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .gap-item.critical { border-left-color: #dc3545; background: #fdf2f2; }
+        .gap-item.moderate { border-left-color: #fd7e14; background: #fef9f0; }
+        .gap-item.minor { border-left-color: #ffc107; background: #fffcf0; }
+        .gap-item.compliant { border-left-color: #28a745; background: #d4edda; }
+        .gap-item .element-name {
+            font-weight: 600;
+            color: #0a2e4a;
+            font-size: 0.9rem;
+        }
+        .gap-item .element-name .pillar-tag {
+            font-weight: 400;
+            font-size: 0.65rem;
+            color: #6c757d;
+            display: block;
+        }
+        .gap-item .score {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .gap-item .score .current { font-weight: 700; font-size: 1rem; color: #0a2e4a; }
+        .gap-item .score .target { color: #6c757d; font-size: 0.8rem; }
+        .gap-item .score .gap-value {
+            font-weight: 700;
+            font-size: 0.9rem;
+            padding: 2px 10px;
+            border-radius: 50px;
+        }
+        .gap-item .score .gap-value.positive { color: #28a745; background: #d4edda; }
+        .gap-item .score .gap-value.negative { color: #dc3545; background: #f8d7da; }
+        .gap-item .score .gap-value.neutral { color: #fd7e14; background: #fff3cd; }
+        
+        /* ===== CAP Section ===== */
+        .cap-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+        .cap-section h3 {
+            color: #0a2e4a;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .cap-section h3 i { color: #e8a838; }
+        .cap-section .cap-intro {
+            color: #6c757d;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+        }
+        .cap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .cap-item {
+            background: #f8f9fa;
+            padding: 18px;
+            border-radius: 12px;
+            border-left: 5px solid #0a2e4a;
+            transition: all 0.3s ease;
+        }
+        .cap-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        .cap-item.priority-high { border-left-color: #dc3545; }
+        .cap-item.priority-medium { border-left-color: #fd7e14; }
+        .cap-item.priority-low { border-left-color: #28a745; }
+        .cap-item .cap-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .cap-item .cap-header .cap-pillar {
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 50px;
+            background: #e9ecef;
+            color: #495057;
+        }
+        .cap-item .cap-header .cap-priority {
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 50px;
+        }
+        .cap-item .cap-header .cap-priority.high { background: #dc3545; color: white; }
+        .cap-item .cap-header .cap-priority.medium { background: #fd7e14; color: white; }
+        .cap-item .cap-header .cap-priority.low { background: #28a745; color: white; }
+        .cap-item .cap-title {
+            font-weight: 600;
+            color: #0a2e4a;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+        .cap-item .cap-current {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-bottom: 6px;
+        }
+        .cap-item .cap-action {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: #0a2e4a;
+            border: 1px solid #e9ecef;
+        }
+        .cap-item .cap-action i { color: #e8a838; margin-right: 8px; }
+        
+        /* ===== Recommendations ===== */
+        .recommendations {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+        .recommendations h3 {
+            color: #0a2e4a;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .recommendations h3 i { color: #e8a838; }
+        .recommendation-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+        .recommendation-item:hover { background: #e9ecef; }
+        .recommendation-item .priority {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+        .recommendation-item .priority.high { background: #dc3545; color: white; }
+        .recommendation-item .priority.medium { background: #fd7e14; color: white; }
+        .recommendation-item .priority.low { background: #28a745; color: white; }
+        .recommendation-item .content { flex: 1; }
+        .recommendation-item .content .title {
+            font-weight: 600;
+            color: #0a2e4a;
+            margin-bottom: 4px;
+        }
+        .recommendation-item .content .description {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        .recommendation-item .content .meta {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+        .recommendation-item .content .meta i { margin-right: 4px; }
+        
+        /* ===== Timeline ===== */
+        .timeline {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+        .timeline h3 {
+            color: #0a2e4a;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .timeline h3 i { color: #e8a838; }
+        .timeline-items {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            padding: 20px 0;
+        }
+        .timeline-items::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #e9ecef;
+            transform: translateY(-50%);
+        }
+        .timeline-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+        .timeline-item .circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #6c757d;
+            transition: all 0.3s ease;
+        }
+        .timeline-item .circle.completed {
+            border-color: #28a745;
+            background: #28a745;
+            color: white;
+        }
+        .timeline-item .circle.in-progress {
+            border-color: #e8a838;
+            background: #e8a838;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+        .timeline-item .circle.locked {
+            border-color: #dee2e6;
+            background: #f8f9fa;
+            color: #adb5bd;
+        }
+        .timeline-item .label {
+            font-size: 0.75rem;
+            color: #6c757d;
+            text-align: center;
+        }
+        .timeline-item .label .session-num {
+            font-weight: 700;
+            color: #0a2e4a;
+            display: block;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        /* ===== Export Buttons ===== */
+        .export-section {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .btn-export {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+        }
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+        .btn-export.pdf { background: #dc3545; color: white; }
+        .btn-export.excel { background: #28a745; color: white; }
+        .btn-export.print { background: #0a2e4a; color: white; }
+        
+        /* ===== No Data ===== */
+        .no-data {
+            text-align: center;
+            padding: 50px 20px;
+        }
+        .no-data i {
+            font-size: 4rem;
+            color: #e8a838;
+            margin-bottom: 20px;
+            display: block;
+        }
+        .no-data h2 { color: #0a2e4a; margin-bottom: 10px; }
+        .no-data p { color: #6c757d; font-size: 1rem; }
+        .no-data .btn-primary {
+            background: #0a2e4a;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .no-data .btn-primary:hover {
+            background: #1a4a6a;
+            transform: translateY(-2px);
+        }
+        
+        /* ===== Responsive ===== */
+        @media (max-width: 1200px) {
+            .pillar-summary-left { flex: 0 0 55%; }
+            .pillar-summary-right { flex: 0 0 45%; }
+        }
+        @media (max-width: 992px) {
+            .pillar-summary-wrapper { flex-direction: column; }
+            .pillar-summary-left { flex: 1; grid-template-columns: 1fr 1fr; }
+            .pillar-summary-right { flex: 1; }
+            .pillar-chart-card .chart-container { height: 200px; max-width: 240px; }
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .analytics-header { flex-direction: column; text-align: center; padding: 20px; }
+            .analytics-header h1 { font-size: 1.4rem; flex-direction: column; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .pillar-summary-left { grid-template-columns: 1fr; }
+            .gap-grid { grid-template-columns: 1fr; }
+            .cap-grid { grid-template-columns: 1fr; }
+            .timeline-items { flex-direction: column; gap: 15px; }
+            .timeline-items::before { display: none; }
+            .timeline-item { flex-direction: row; width: 100%; justify-content: flex-start; gap: 15px; }
+            .export-section { flex-direction: column; align-items: center; }
+            .btn-export { width: 100%; justify-content: center; }
+            .admin-toggle { flex-direction: column; align-items: stretch; }
+            .admin-toggle .airline-selector { flex-direction: column; }
+            .admin-toggle .airline-selector select { width: 100%; }
+            .comparison-table table { font-size: 0.75rem; }
+            .comparison-table table th, .comparison-table table td { padding: 8px 10px; }
+            .role-banner { flex-direction: column; text-align: center; }
+            .date-filter .filter-header { flex-direction: column; align-items: stretch; }
+            .date-filter .filter-controls { flex-direction: column; align-items: stretch; }
+            .date-filter .filter-controls .date-group input { width: 100%; }
+            .date-filter .filter-stats { flex-direction: column; align-items: flex-start; gap: 8px; }
+        }
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .pillar-chart-card .chart-container { height: 180px; max-width: 200px; }
+        }
+        
+        /* ===== Print Styles ===== */
+        @media print {
+            .btn-back, .export-section, .btn-export, .admin-toggle, .role-banner, .date-filter { display: none !important; }
+            .analytics-container { padding: 0; }
+            .analytics-header { background: #0a2e4a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .stat-card, .pillar-card, .pillar-chart-card, .chart-card, .gap-analysis, .cap-section, .recommendations, .timeline, .comparison-table {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                box-shadow: none !important;
+                border: 1px solid #dee2e6;
+            }
+            .charts-grid { grid-template-columns: 1fr 1fr; }
+            .pillar-summary-wrapper { flex-direction: row; }
+            .pillar-summary-left { flex: 0 0 60%; }
+            .pillar-summary-right { flex: 0 0 40%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="analytics-container" id="analyticsContent">
+
+        <!-- ===== HEADER ===== -->
+        <header class="analytics-header">
+            <div>
+                <h1>
+                    <i class="fas fa-chart-bar"></i>
+                    SMS Gap Analysis Report
+                    <span class="badge" id="statusBadge">Loading...</span>
+                </h1>
+                <div class="subtitle" id="reportSubtitle">
+                    <i class="fas fa-calendar-alt"></i> Generated: <span id="generatedDate">Loading...</span>
+                    &bull; <i class="fas fa-building"></i> <span id="tenantName">Loading...</span>
+                </div>
+            </div>
+            <button class="btn-back" onclick="goToDashboard()">
+                <i class="fas fa-arrow-left"></i> <span id="backButtonText">Back to Dashboard</span>
+            </button>
+        </header>
+
+        <!-- ===== ROLE BANNER ===== -->
+        <div class="role-banner" id="roleBanner">
+            <div class="role-info">
+                <div class="role-icon"><i class="fas fa-user-shield"></i></div>
+                <div class="role-text">
+                    <span id="roleDisplay">Airline User</span>
+                    <small id="roleDescription">Viewing your airline's data only</small>
+                </div>
+            </div>
+            <span class="role-badge" id="roleBadge">AIRLINE</span>
+        </div>
+
+        <!-- ===== ADMIN TOGGLE ===== -->
+        <div class="admin-toggle" id="adminToggle">
+            <div class="toggle-label">
+                <i class="fas fa-filter"></i>
+                <span>Filter by Airline</span>
+            </div>
+            <div class="airline-selector">
+                <select id="airlineFilter">
+                    <option value="all">📊 All Airlines (Consolidated)</option>
+                </select>
+                <button class="btn-filter" onclick="applyFilter()">
+                    <i class="fas fa-filter"></i> Apply Filter
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== CAAN DATE FILTER ===== -->
+        <div class="date-filter" id="dateFilter">
+            <div class="filter-header">
+                <div class="filter-label">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Survey Period Filter</span>
+                </div>
+                <div class="filter-controls">
+                    <div class="date-group">
+                        <label for="filterStartDate">From</label>
+                        <input type="date" id="filterStartDate" />
+                    </div>
+                    <div class="date-group">
+                        <label for="filterEndDate">To</label>
+                        <input type="date" id="filterEndDate" />
+                    </div>
+                    <button class="btn-filter" onclick="applyDateFilter()">
+                        <i class="fas fa-filter"></i> Apply
+                    </button>
+                    <button class="btn-filter clear" onclick="clearDateFilter()">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                    <span class="filter-status" id="filterStatus"></span>
+                </div>
+            </div>
+            <div class="preset-buttons">
+                <button class="btn-preset" onclick="setPresetFilter('week')">This Week</button>
+                <button class="btn-preset" onclick="setPresetFilter('month')">This Month</button>
+                <button class="btn-preset" onclick="setPresetFilter('quarter')">This Quarter</button>
+                <button class="btn-preset" onclick="setPresetFilter('year')">This Year</button>
+                <button class="btn-preset" onclick="setPresetFilter('all')">All Time</button>
+            </div>
+            <div class="filter-stats" id="filterStats">
+                <span class="stat-item">
+                    <i class="fas fa-check-circle green"></i>
+                    On-Time Completion: <span class="count green" id="onTimeCount">0</span>
+                </span>
+                <span class="stat-item">
+                    <i class="fas fa-clock orange"></i>
+                    Pending: <span class="count orange" id="pendingCount">0</span>
+                </span>
+                <span class="stat-item">
+                    <i class="fas fa-check-double blue"></i>
+                    Total Completed: <span class="count blue" id="totalCompletedCount">0</span>
+                </span>
+                <span class="stat-item">
+                    <i class="fas fa-calendar-week"></i>
+                    Period: <span id="periodDisplay">All time</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- ===== STATS GRID ===== -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card blue">
+                <div class="icon"><i class="fas fa-clipboard-list"></i></div>
+                <div class="number" id="totalSessions">0</div>
+                <div class="label">Total Sessions</div>
+            </div>
+            <div class="stat-card green">
+                <div class="icon"><i class="fas fa-check-circle"></i></div>
+                <div class="number" id="completedSessions">0</div>
+                <div class="label">Completed</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="icon"><i class="fas fa-star"></i></div>
+                <div class="number" id="avgScore">0.0</div>
+                <div class="label">Average Score / 5.0</div>
+            </div>
+            <div class="stat-card red">
+                <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="number" id="criticalGaps">0</div>
+                <div class="label">Critical Gaps</div>
+            </div>
+        </div>
+
+        <!-- ===== PILLAR SUMMARY WITH PIE CHART ===== -->
+        <div class="pillar-summary-wrapper">
+            <div class="pillar-summary-left" id="pillarSummary">
+                <!-- Populated by JavaScript -->
+            </div>
+            <div class="pillar-summary-right">
+                <div class="pillar-chart-card">
+                    <h3><i class="fas fa-chart-pie"></i> Pillar Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="pillarChart"></canvas>
+                    </div>
+                    <div class="pillar-legend" id="pillarLegend">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== COMPARISON TABLE ===== -->
+        <div class="comparison-table" id="comparisonTable">
+            <h3><i class="fas fa-table"></i> Airline Comparison</h3>
+            <div id="comparisonTableContent">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- ===== NO DATA MESSAGE ===== -->
+        <div id="noDataMessage" class="no-data" style="display: none; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 25px;">
+            <i class="fas fa-clipboard-list"></i>
+            <h2>No Survey Data Yet</h2>
+            <p>Complete at least one survey session to generate your gap analysis report.</p>
+            <button class="btn-primary" onclick="goToDashboard()">
+                <i class="fas fa-arrow-left"></i> <span id="noDataBackText">Go to Dashboard</span>
+            </button>
+        </div>
+
+        <!-- ===== CHARTS ===== -->
+        <div id="chartsSection">
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3><i class="fas fa-chart-bar"></i> Element Scores</h3>
+                    <div class="chart-container">
+                        <canvas id="elementChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3><i class="fas fa-chart-line"></i> Gap Analysis</h3>
+                    <div class="chart-container">
+                        <canvas id="gapChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== GAP ANALYSIS DETAIL ===== -->
+            <div class="gap-analysis" id="gapAnalysis">
+                <h3><i class="fas fa-search"></i> Detailed Gap Analysis</h3>
+                <div class="gap-grid" id="gapGrid">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- ===== CORRECTIVE ACTION PLAN (CAP) ===== -->
+            <div class="cap-section" id="capSection">
+                <h3><i class="fas fa-tasks"></i> Corrective Action Plan (CAP)</h3>
+                <p class="cap-intro">
+                    Based on your SMS gap analysis, here are recommended corrective actions organized by pillar.
+                    Prioritize high-priority items first for maximum impact.
+                </p>
+                <div class="cap-grid" id="capGrid">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- ===== RECOMMENDATIONS ===== -->
+            <div class="recommendations" id="recommendations">
+                <h3><i class="fas fa-lightbulb"></i> Recommendations</h3>
+                <div id="recommendationsList">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- ===== TIMELINE ===== -->
+            <div class="timeline">
+                <h3><i class="fas fa-timeline"></i> Session Progress Timeline</h3>
+                <div class="timeline-items" id="timelineItems">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- ===== EXPORT SECTION ===== -->
+            <div class="export-section">
+                <button class="btn-export pdf" onclick="exportPDF()">
+                    <i class="fas fa-file-pdf"></i> Export PDF
+                </button>
+                <button class="btn-export excel" onclick="exportExcel()">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </button>
+                <button class="btn-export print" onclick="window.print()">
+                    <i class="fas fa-print"></i> Print Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // CONFIGURATION
+        // ============================================================
+        const ELEMENT_NAMES = {
+            1: 'Safety Policy & Objectives',
+            2: 'Safety Accountabilities',
+            3: 'Hazard Identification',
+            4: 'Risk Assessment & Mitigation',
+            5: 'Safety Performance Monitoring',
+            6: 'Internal Safety Audits',
+            7: 'Management of Change',
+            8: 'Continuous Improvement',
+            9: 'Safety Training & Competence',
+            10: 'Safety Communication',
+            11: 'Safety Culture',
+            12: 'Emergency Response Planning'
+        };
+
+        const ELEMENT_PILLARS = {
+            1: 'Policy',
+            2: 'Policy',
+            3: 'Risk Management',
+            4: 'Risk Management',
+            5: 'Assurance',
+            6: 'Assurance',
+            7: 'Assurance',
+            8: 'Assurance',
+            9: 'Promotion',
+            10: 'Promotion',
+            11: 'Promotion',
+            12: 'Assurance'
+        };
+
+        const PILLAR_ICONS = {
+            'Policy': 'fa-bullseye',
+            'Risk Management': 'fa-chart-line',
+            'Assurance': 'fa-check-circle',
+            'Promotion': 'fa-users'
+        };
+
+        const PILLAR_COLORS = {
+            'Policy': '#2e7daf',
+            'Risk Management': '#e8a838',
+            'Assurance': '#28a745',
+            'Promotion': '#dc3545'
+        };
+
+        const AIRLINES = [
+            'Sita Air',
+            'Tara Air',
+            'Summit Air',
+            'Buddha Air',
+            'Yeti Airlines',
+            'Shree Airlines',
+            'Danfe Air'
+        ];
+
+        const AIRLINE_TENANTS = {
+            'Sita Air': 'sita-air',
+            'Tara Air': 'tara-air',
+            'Summit Air': 'summit-air',
+            'Buddha Air': 'buddha-air',
+            'Yeti Airlines': 'yeti-airlines',
+            'Shree Airlines': 'shree-airlines',
+            'Danfe Air': 'danfe-air'
+        };
+
+        // ============================================================
+        // STATE
+        // ============================================================
+        let tenantId = null;
+        let userRole = 'airline';
+        let userAirline = null;
+        let selectedFilter = 'all';
+        let elementChart = null;
+        let gapChart = null;
+        let pillarChartInstance = null;
+        let allAirlineData = {};
+        let dateFilter = null;
+
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📊 Analytics Dashboard Loaded');
+
+            const urlParams = new URLSearchParams(window.location.search);
+            tenantId = urlParams.get('tenant') || 'default';
+
+            const userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
+            if (!userData.email) {
+                window.location.href = `../login.html`;
+                return;
+            }
+
+            userRole = userData.role || 'airline';
+            userAirline = userData.airline || userData.displayName || 'Aviation Organization';
+
+            console.log(`👤 User: ${userData.email}`);
+            console.log(`🎭 Role: ${userRole}`);
+            console.log(`✈️ Airline: ${userAirline}`);
+            console.log(`📋 Tenant: ${tenantId}`);
+
+            document.getElementById('tenantName').textContent = userRole === 'caan' ? 'CAAN (Regulator)' : userAirline;
+            document.getElementById('generatedDate').textContent = new Date().toLocaleString();
+
+            updateRoleBanner();
+            updateBackButtonText();
+
+            loadAllAirlineData();
+            populateAirlineFilter();
+
+            // Show CAAN date filter
+            if (userRole === 'caan') {
+                document.getElementById('dateFilter').classList.add('visible');
+                document.getElementById('adminToggle').classList.add('visible');
+                selectedFilter = 'all';
+                updateComplianceStats();
+            }
+
+            renderView();
+        });
+
+        // ============================================================
+        // UPDATE ROLE BANNER
+        // ============================================================
+        function updateRoleBanner() {
+            const roleDisplay = document.getElementById('roleDisplay');
+            const roleDescription = document.getElementById('roleDescription');
+            const roleBadge = document.getElementById('roleBadge');
+
+            if (userRole === 'admin') {
+                roleDisplay.textContent = 'Administrator';
+                roleDescription.textContent = 'Full access to all data and management controls';
+                roleBadge.textContent = 'ADMIN';
+                roleBadge.className = 'role-badge admin';
+            } else if (userRole === 'caan') {
+                roleDisplay.textContent = 'CAAN (Regulator)';
+                roleDescription.textContent = 'View-only access to all airlines (no data modification)';
+                roleBadge.textContent = 'CAAN';
+                roleBadge.className = 'role-badge caan';
+            } else {
+                roleDisplay.textContent = `${userAirline}`;
+                roleDescription.textContent = 'Viewing your airline\'s data only';
+                roleBadge.textContent = 'AIRLINE';
+                roleBadge.className = 'role-badge airline';
+            }
+        }
+
+        // ============================================================
+        // UPDATE BACK BUTTON TEXT
+        // ============================================================
+        function updateBackButtonText() {
+            const backBtn = document.getElementById('backButtonText');
+            const noDataBtn = document.getElementById('noDataBackText');
+
+            if (userRole === 'caan') {
+                if (backBtn) backBtn.textContent = 'Exit';
+                if (noDataBtn) noDataBtn.textContent = 'Exit';
+            } else {
+                if (backBtn) backBtn.textContent = 'Back to Dashboard';
+                if (noDataBtn) noDataBtn.textContent = 'Go to Dashboard';
+            }
+        }
+
+        // ============================================================
+        // NAVIGATION
+        // ============================================================
+        function goToDashboard() {
+            if (userRole === 'caan') {
+                window.location.href = `../thankyou.html`;
+            } else {
+                window.location.href = `../dashboard.html?tenant=${tenantId}`;
+            }
+        }
+
+        // ============================================================
+        // DATE FILTER FUNCTIONS
+        // ============================================================
+        function getAirlineCompletionDate(tenantId) {
+            return localStorage.getItem(`sms_${tenantId}_last_completion_date`) || null;
+        }
+
+        function getAllAirlinesWithDates() {
+            const result = {};
+            const airlines = ['sita-air', 'tara-air', 'summit-air', 'buddha-air', 'yeti-airlines', 'shree-airlines', 'danfe-air'];
+            
+            airlines.forEach(tenantId => {
+                const completed = parseInt(localStorage.getItem(`sms_${tenantId}_completed_sessions`) || '0');
+                if (completed > 0) {
+                    const date = getAirlineCompletionDate(tenantId);
+                    const name = Object.keys(AIRLINE_TENANTS).find(key => AIRLINE_TENANTS[key] === tenantId) || tenantId;
+                    result[tenantId] = {
+                        name: name,
+                        completed: completed,
+                        date: date,
+                        hasDate: date !== null
+                    };
+                }
+            });
+            
+            return result;
+        }
+
+        function isDateInRange(dateString, startDate, endDate) {
+            if (!dateString) return false;
+            const date = new Date(dateString);
+            const start = startDate ? new Date(startDate) : null;
+            const end = endDate ? new Date(endDate) : null;
+            
+            if (start && date < start) return false;
+            if (end && date > end) return false;
+            return true;
+        }
+
+        function setPresetFilter(preset) {
+            const today = new Date();
+            const startInput = document.getElementById('filterStartDate');
+            const endInput = document.getElementById('filterEndDate');
+            
+            let startDate = null;
+            let endDate = null;
+            
+            switch(preset) {
+                case 'week':
+                    startDate = new Date(today);
+                    startDate.setDate(today.getDate() - today.getDay());
+                    endDate = new Date(today);
+                    endDate.setDate(today.getDate() + (6 - today.getDay()));
+                    break;
+                case 'month':
+                    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                    endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    break;
+                case 'quarter':
+                    const quarter = Math.floor(today.getMonth() / 3);
+                    startDate = new Date(today.getFullYear(), quarter * 3, 1);
+                    endDate = new Date(today.getFullYear(), quarter * 3 + 3, 0);
+                    break;
+                case 'year':
+                    startDate = new Date(today.getFullYear(), 0, 1);
+                    endDate = new Date(today.getFullYear(), 11, 31);
+                    break;
+                case 'all':
+                default:
+                    startDate = null;
+                    endDate = null;
+                    break;
+            }
+            
+            startInput.value = startDate ? startDate.toISOString().split('T')[0] : '';
+            endInput.value = endDate ? endDate.toISOString().split('T')[0] : '';
+            
+            // Highlight active preset
+            document.querySelectorAll('.btn-preset').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent === document.querySelector(`.btn-preset[onclick*="${preset}"]`)?.textContent);
+            });
+            
+            if (preset === 'all') {
+                clearDateFilter();
+            } else {
+                applyDateFilter();
+            }
+        }
+
+        function applyDateFilter() {
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+            
+            dateFilter = { startDate, endDate };
+            
+            let rangeText = 'All time';
+            if (startDate && endDate) {
+                rangeText = `${startDate} to ${endDate}`;
+            } else if (startDate) {
+                rangeText = `From ${startDate}`;
+            } else if (endDate) {
+                rangeText = `Up to ${endDate}`;
+            }
+            
+            document.getElementById('periodDisplay').textContent = rangeText;
+            document.getElementById('filterStatus').textContent = rangeText !== 'All time' ? `✅ Filtered: ${rangeText}` : '';
+            
+            renderView();
+            updateComplianceStats();
+        }
+
+        function clearDateFilter() {
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            dateFilter = null;
+            document.getElementById('periodDisplay').textContent = 'All time';
+            document.getElementById('filterStatus').textContent = '';
+            
+            document.querySelectorAll('.btn-preset').forEach(btn => btn.classList.remove('active'));
+            
+            renderView();
+            updateComplianceStats();
+        }
+
+        function updateComplianceStats() {
+            const airlines = getAllAirlinesWithDates();
+            let onTime = 0;
+            let totalCompleted = 0;
+            const totalAirlines = Object.keys(airlines).length;
+            
+            const startDate = dateFilter?.startDate || null;
+            const endDate = dateFilter?.endDate || null;
+            
+            for (const key in airlines) {
+                const airline = airlines[key];
+                totalCompleted++;
+                if (airline.hasDate) {
+                    const inRange = isDateInRange(airline.date, startDate, endDate);
+                    if (inRange) {
+                        onTime++;
+                    }
+                }
+            }
+            
+            document.getElementById('onTimeCount').textContent = onTime;
+            document.getElementById('pendingCount').textContent = Math.max(0, AIRLINES.length - onTime);
+            document.getElementById('totalCompletedCount').textContent = totalCompleted;
+        }
+
+        // ============================================================
+        // LOAD AIRLINE DATA
+        // ============================================================
+        function loadAllAirlineData() {
+            allAirlineData = {};
+
+            if (userRole === 'caan' || userRole === 'admin') {
+                AIRLINES.forEach(airline => {
+                    const tenantId = AIRLINE_TENANTS[airline];
+                    const data = getAirlineData(tenantId, airline);
+                    if (data && data.sessionsCompleted > 0) {
+                        // Store completion date with data
+                        data.completionDate = getAirlineCompletionDate(tenantId);
+                        allAirlineData[tenantId] = data;
+                    }
+                });
+            }
+
+            const userTenant = tenantId;
+            if (userTenant && userTenant !== 'default' && userTenant !== 'caan') {
+                const airlineName = Object.keys(AIRLINE_TENANTS).find(key => AIRLINE_TENANTS[key] === userTenant) || userAirline;
+                const data = getAirlineData(userTenant, airlineName);
+                if (data && data.sessionsCompleted > 0) {
+                    data.completionDate = getAirlineCompletionDate(userTenant);
+                    allAirlineData[userTenant] = data;
+                }
+            }
+
+            const defaultData = getAirlineData('default', 'Default');
+            if (defaultData && defaultData.sessionsCompleted > 0) {
+                allAirlineData['default'] = defaultData;
+            }
+
+            console.log('📊 Loaded airline data:', Object.keys(allAirlineData));
+        }
+
+        // ============================================================
+        // GET AIRLINE DATA FROM LOCALSTORAGE
+        // ============================================================
+        function getAirlineData(tenantId, airlineName) {
+            const completed = parseInt(localStorage.getItem(`sms_${tenantId}_completed_sessions`) || '0');
+            if (completed === 0) return null;
+
+            const allAnswers = [];
+            for (let i = 1; i <= 5; i++) {
+                const answers = JSON.parse(localStorage.getItem(`sms_${tenantId}_session_${i}_answers`) || '[]');
+                if (answers.length > 0) {
+                    allAnswers.push(...answers);
+                }
+            }
+
+            if (allAnswers.length === 0) return null;
+
+            const elementScores = {};
+            const questionsPerElement = 2;
+
+            allAnswers.forEach((answer, index) => {
+                if (answer !== null && answer !== undefined) {
+                    const elementIndex = Math.floor(index / questionsPerElement) + 1;
+                    if (!elementScores[elementIndex]) elementScores[elementIndex] = [];
+                    elementScores[elementIndex].push(answer);
+                }
+            });
+
+            const elementAverages = {};
+            for (const key in elementScores) {
+                const scores = elementScores[key];
+                elementAverages[key] = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100;
+            }
+
+            const pillarScores = {};
+            for (const pillar of ['Policy', 'Risk Management', 'Assurance', 'Promotion']) {
+                pillarScores[pillar] = { scores: [], elements: [] };
+            }
+
+            for (let i = 1; i <= 12; i++) {
+                const pillar = ELEMENT_PILLARS[i];
+                if (elementAverages[i] !== undefined) {
+                    pillarScores[pillar].scores.push(elementAverages[i]);
+                    pillarScores[pillar].elements.push(i);
+                }
+            }
+
+            const pillarAverages = {};
+            for (const pillar in pillarScores) {
+                const scores = pillarScores[pillar].scores;
+                pillarAverages[pillar] = scores.length > 0 ?
+                    Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100 :
+                    0;
+            }
+
+            const allScores = Object.values(elementAverages);
+            const overallAverage = allScores.length > 0 ?
+                Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 100) / 100 :
+                0;
+
+            const targetScore = 4.5;
+            const gaps = {};
+            let criticalCount = 0;
+
+            for (let i = 1; i <= 12; i++) {
+                const current = elementAverages[i] || 0;
+                const gap = Math.round((targetScore - current) * 100) / 100;
+
+                let severity = 'Compliant';
+                if (gap > 0 && gap <= 0.5) severity = 'Minor Gap';
+                else if (gap > 0.5 && gap <= 1.0) severity = 'Moderate Gap';
+                else if (gap > 1.0) { severity = 'Critical Gap';
+                    criticalCount++; }
+
+                gaps[i] = {
+                    current: current,
+                    target: targetScore,
+                    gap: gap,
+                    severity: severity,
+                    name: ELEMENT_NAMES[i],
+                    pillar: ELEMENT_PILLARS[i]
+                };
+            }
+
+            return {
+                name: airlineName,
+                tenantId: tenantId,
+                sessionsCompleted: completed,
+                totalSessions: 5,
+                elementAverages: elementAverages,
+                pillarAverages: pillarAverages,
+                overallAverage: overallAverage,
+                criticalGaps: criticalCount,
+                gaps: gaps,
+                totalQuestions: allAnswers.length,
+                completionDate: getAirlineCompletionDate(tenantId)
+            };
+        }
+
+        // ============================================================
+        // POPULATE AIRLINE FILTER
+        // ============================================================
+        function populateAirlineFilter() {
+            const select = document.getElementById('airlineFilter');
+            while (select.options.length > 0) {
+                select.remove(0);
+            }
+
+            if (userRole === 'caan' || userRole === 'admin') {
+                const allOption = document.createElement('option');
+                allOption.value = 'all';
+                allOption.textContent = '📊 All Airlines (Consolidated)';
+                select.appendChild(allOption);
+            }
+
+            for (const tenantId in allAirlineData) {
+                const data = allAirlineData[tenantId];
+                const option = document.createElement('option');
+                option.value = tenantId;
+                const icon = tenantId === 'default' ? '🏠' : '✈️';
+                const dateLabel = data.completionDate ? ` (${new Date(data.completionDate).toLocaleDateString()})` : '';
+                option.textContent = `${icon} ${data.name}${dateLabel}`;
+                select.appendChild(option);
+            }
+
+            select.value = selectedFilter;
+        }
+
+        // ============================================================
+        // APPLY FILTER
+        // ============================================================
+        function applyFilter() {
+            const select = document.getElementById('airlineFilter');
+            selectedFilter = select.value;
+            renderView();
+        }
+
+        // ============================================================
+        // CONSOLIDATE AIRLINE DATA
+        // ============================================================
+        function consolidateAirlineData(airlines) {
+            const airlineList = airlines || Object.values(allAirlineData);
+            if (airlineList.length === 0) return null;
+
+            const consolidatedElements = {};
+            const pillarScores = {};
+
+            airlineList.forEach(airline => {
+                for (const key in airline.elementAverages) {
+                    if (!consolidatedElements[key]) consolidatedElements[key] = [];
+                    consolidatedElements[key].push(airline.elementAverages[key]);
+                }
+            });
+
+            const elementAverages = {};
+            for (const key in consolidatedElements) {
+                const scores = consolidatedElements[key];
+                elementAverages[key] = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100;
+            }
+
+            const pillarData = {};
+            for (const pillar of ['Policy', 'Risk Management', 'Assurance', 'Promotion']) {
+                pillarData[pillar] = [];
+            }
+
+            airlineList.forEach(airline => {
+                for (const pillar in airline.pillarAverages) {
+                    if (airline.pillarAverages[pillar] > 0) {
+                        pillarData[pillar].push(airline.pillarAverages[pillar]);
+                    }
+                }
+            });
+
+            const pillarAverages = {};
+            for (const pillar in pillarData) {
+                const scores = pillarData[pillar];
+                pillarAverages[pillar] = scores.length > 0 ?
+                    Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100 :
+                    0;
+            }
+
+            const allScores = Object.values(elementAverages);
+            const overallAverage = allScores.length > 0 ?
+                Math.round((allScores.reduce((a, b) => a + b, 0) / allScores.length) * 100) / 100 :
+                0;
+
+            const targetScore = 4.5;
+            const gaps = {};
+            let criticalCount = 0;
+
+            for (let i = 1; i <= 12; i++) {
+                const current = elementAverages[i] || 0;
+                const gap = Math.round((targetScore - current) * 100) / 100;
+
+                let severity = 'Compliant';
+                if (gap > 0 && gap <= 0.5) severity = 'Minor Gap';
+                else if (gap > 0.5 && gap <= 1.0) severity = 'Moderate Gap';
+                else if (gap > 1.0) { severity = 'Critical Gap';
+                    criticalCount++; }
+
+                gaps[i] = {
+                    current: current,
+                    target: targetScore,
+                    gap: gap,
+                    severity: severity,
+                    name: ELEMENT_NAMES[i],
+                    pillar: ELEMENT_PILLARS[i]
+                };
+            }
+
+            return {
+                name: 'All Airlines (Consolidated)',
+                tenantId: 'all',
+                sessionsCompleted: airlineList.reduce((sum, a) => sum + a.sessionsCompleted, 0),
+                totalSessions: airlineList.length * 5,
+                airlinesCount: airlineList.length,
+                elementAverages: elementAverages,
+                pillarAverages: pillarAverages,
+                overallAverage: overallAverage,
+                criticalGaps: criticalCount,
+                gaps: gaps,
+                isConsolidated: true,
+                airlineData: airlineList
+            };
+        }
+
+        // ============================================================
+        // RENDER VIEW
+        // ============================================================
+        function renderView() {
+            let data = null;
+            let isConsolidated = false;
+
+            // Apply date filter for CAAN
+            let filteredData = null;
+            if (userRole === 'caan' && dateFilter) {
+                const startDate = dateFilter.startDate || null;
+                const endDate = dateFilter.endDate || null;
+                
+                filteredData = {};
+                for (const key in allAirlineData) {
+                    const airline = allAirlineData[key];
+                    const completionDate = airline.completionDate || getAirlineCompletionDate(key);
+                    if (completionDate && isDateInRange(completionDate, startDate, endDate)) {
+                        filteredData[key] = airline;
+                    }
+                }
+            }
+
+            if (userRole === 'caan' || userRole === 'admin') {
+                if (selectedFilter === 'all') {
+                    data = consolidateAirlineData(filteredData || null);
+                    isConsolidated = true;
+                } else {
+                    data = (filteredData && filteredData[selectedFilter]) || allAirlineData[selectedFilter] || null;
+                }
+            } else {
+                data = allAirlineData[tenantId] || null;
+            }
+
+            if (!data) {
+                document.getElementById('noDataMessage').style.display = 'block';
+                document.getElementById('chartsSection').style.display = 'none';
+                document.getElementById('comparisonTable').style.display = 'none';
+                document.getElementById('statusBadge').textContent = '⏳ No Data';
+                document.getElementById('statusBadge').style.background = '#6c757d';
+                document.getElementById('statusBadge').style.color = 'white';
+                return;
+            }
+
+            document.getElementById('noDataMessage').style.display = 'none';
+            document.getElementById('chartsSection').style.display = 'block';
+            document.getElementById('comparisonTable').style.display = 'block';
+
+            const title = isConsolidated ? 'All Airlines (Consolidated)' : data.name;
+            document.getElementById('tenantName').textContent = title;
+
+            renderStats(data);
+            renderPillarSummary(data);
+            renderPillarChart(data);
+            renderComparisonTable(data, isConsolidated);
+            renderTimeline(data);
+            renderGapAnalysis(data);
+            renderCAP(data);
+            renderRecommendations(data);
+            renderCharts(data);
+
+            const badge = document.getElementById('statusBadge');
+            if (userRole === 'admin') {
+                badge.textContent = '👑 Admin View';
+                badge.style.background = '#dc3545';
+                badge.style.color = 'white';
+            } else if (userRole === 'caan') {
+                badge.textContent = '🏛️ CAAN View';
+                badge.style.background = '#004085';
+                badge.style.color = 'white';
+                updateComplianceStats();
+            } else {
+                badge.textContent = '✈️ Airline View';
+                badge.style.background = '#e8a838';
+                badge.style.color = '#0a2e4a';
+            }
+        }
+
+        // ============================================================
+        // RENDER FUNCTIONS
+        // ============================================================
+        function renderStats(data) {
+            document.getElementById('totalSessions').textContent = data.totalSessions || 0;
+            document.getElementById('completedSessions').textContent = data.sessionsCompleted || 0;
+            document.getElementById('avgScore').textContent = (data.overallAverage || 0).toFixed(1);
+            document.getElementById('criticalGaps').textContent = data.criticalGaps || 0;
+        }
+
+        function renderPillarSummary(data) {
+            const container = document.getElementById('pillarSummary');
+            container.innerHTML = '';
+
+            const pillarOrder = ['Policy', 'Risk Management', 'Assurance', 'Promotion'];
+            const pillarDescriptions = {
+                'Policy': 'Management commitment, safety accountabilities, and documented safety policies',
+                'Risk Management': 'Hazard identification, risk assessment, and mitigation strategies',
+                'Assurance': 'Performance monitoring, audits, and continuous improvement processes',
+                'Promotion': 'Training, communication, and fostering a positive safety culture'
+            };
+
+            pillarOrder.forEach(pillar => {
+                const score = data.pillarAverages[pillar] || 0;
+                const status = score >= 4.0 ? 'strong' : (score >= 3.0 ? 'moderate' : 'weak');
+                const statusLabel = score >= 4.0 ? 'Strong' : (score >= 3.0 ? 'Moderate' : 'Weak');
+                const statusIcon = score >= 4.0 ? '✅' : (score >= 3.0 ? '⚠️' : '🔴');
+
+                const elements = [];
+                for (let i = 1; i <= 12; i++) {
+                    if (ELEMENT_PILLARS[i] === pillar) {
+                        elements.push(i);
+                    }
+                }
+
+                const card = document.createElement('div');
+                card.className = `pillar-card pillar-${pillar.toLowerCase().replace(' ', '-')}`;
+                card.innerHTML = `
+                    <div class="pillar-header">
+                        <h4><i class="fas ${PILLAR_ICONS[pillar]}"></i> ${pillar}</h4>
+                        <span class="pillar-score ${score >= 4.0 ? 'good' : (score >= 3.0 ? 'average' : 'poor')}">${score.toFixed(1)}</span>
+                    </div>
+                    <div class="pillar-elements">
+                        Elements: ${elements.map(e => `<span>${e}</span>`).join('')}
+                    </div>
+                    <div class="pillar-elements" style="font-size:0.75rem;margin-top:4px;color:#6c757d;">
+                        ${pillarDescriptions[pillar]}
+                    </div>
+                    <div class="pillar-status ${status}">
+                        ${statusIcon} ${statusLabel} - ${score >= 4.0 ? 'No immediate action needed' : (score >= 3.0 ? 'Some improvement needed' : 'Immediate attention required')}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderPillarChart(data) {
+            const ctx = document.getElementById('pillarChart').getContext('2d');
+
+            const pillarOrder = ['Policy', 'Risk Management', 'Assurance', 'Promotion'];
+            const colors = ['#2e7daf', '#e8a838', '#28a745', '#dc3545'];
+            const scores = pillarOrder.map(p => data.pillarAverages[p] || 0);
+
+            if (pillarChartInstance) {
+                pillarChartInstance.destroy();
+                pillarChartInstance = null;
+            }
+
+            pillarChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: pillarOrder,
+                    datasets: [{
+                        data: scores,
+                        backgroundColor: colors,
+                        borderColor: ['#ffffff', '#ffffff', '#ffffff', '#ffffff'],
+                        borderWidth: 3,
+                        hoverOffset: 15
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    return `${label}: ${value.toFixed(1)} / 5.0`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '68%'
+                }
+            });
+
+            renderPillarLegend(pillarOrder, colors, scores);
+        }
+
+        function renderPillarLegend(labels, colors, scores) {
+            const container = document.getElementById('pillarLegend');
+            container.innerHTML = '';
+
+            labels.forEach((label, index) => {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `
+                    <span class="color-box" style="background:${colors[index]};"></span>
+                    <span>${label}</span>
+                    <span class="score">${scores[index].toFixed(1)}</span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function renderComparisonTable(data, isConsolidated) {
+            const container = document.getElementById('comparisonTableContent');
+
+            if ((userRole === 'caan' || userRole === 'admin') && isConsolidated && data.airlineData) {
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Airline</th>
+                                <th>Overall Score</th>
+                                <th>Policy</th>
+                                <th>Risk Mgmt</th>
+                                <th>Assurance</th>
+                                <th>Promotion</th>
+                                <th>Critical Gaps</th>
+                                <th>Completed</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                const sorted = [...data.airlineData].sort((a, b) => b.overallAverage - a.overallAverage);
+
+                sorted.forEach(airline => {
+                    const score = airline.overallAverage || 0;
+                    const scoreClass = score >= 4.0 ? 'high' : (score >= 3.0 ? 'medium' : 'low');
+                    const status = score >= 4.0 ? '✅ Strong' : (score >= 3.0 ? '⚠️ Moderate' : '🔴 Weak');
+                    const dateLabel = airline.completionDate ? new Date(airline.completionDate).toLocaleDateString() : 'Pending';
+
+                    html += `
+                        <tr>
+                            <td>
+                                <a href="analytics.html?tenant=${airline.tenantId}" class="airline-link">
+                                    ${airline.name}
+                                </a>
+                            </td>
+                            <td><span class="score-badge ${scoreClass}">${score.toFixed(1)}</span></td>
+                            <td>${(airline.pillarAverages.Policy || 0).toFixed(1)}</td>
+                            <td>${(airline.pillarAverages['Risk Management'] || 0).toFixed(1)}</td>
+                            <td>${(airline.pillarAverages.Assurance || 0).toFixed(1)}</td>
+                            <td>${(airline.pillarAverages.Promotion || 0).toFixed(1)}</td>
+                            <td>${airline.criticalGaps || 0}</td>
+                            <td>${dateLabel}</td>
+                            <td>${status}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                        </tbody>
+                    </table>
+                    <div style="margin-top:10px;font-size:0.8rem;color:#6c757d;text-align:center;">
+                        Click on any airline name to view detailed analytics
+                    </div>
+                `;
+
+                container.innerHTML = html;
+            } else {
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>Airline</strong></td><td>${data.name}</td></tr>
+                            <tr><td><strong>Overall Score</strong></td><td>${(data.overallAverage || 0).toFixed(1)} / 5.0</td></tr>
+                            <tr><td><strong>Policy</strong></td><td>${(data.pillarAverages.Policy || 0).toFixed(1)} / 5.0</td></tr>
+                            <tr><td><strong>Risk Management</strong></td><td>${(data.pillarAverages['Risk Management'] || 0).toFixed(1)} / 5.0</td></tr>
+                            <tr><td><strong>Assurance</strong></td><td>${(data.pillarAverages.Assurance || 0).toFixed(1)} / 5.0</td></tr>
+                            <tr><td><strong>Promotion</strong></td><td>${(data.pillarAverages.Promotion || 0).toFixed(1)} / 5.0</td></tr>
+                            <tr><td><strong>Critical Gaps</strong></td><td>${data.criticalGaps || 0}</td></tr>
+                            <tr><td><strong>Sessions Completed</strong></td><td>${data.sessionsCompleted || 0} / ${data.totalSessions || 5}</td></tr>
+                            ${data.completionDate ? `<tr><td><strong>Completion Date</strong></td><td>${new Date(data.completionDate).toLocaleString()}</td></tr>` : ''}
+                        </tbody>
+                    </table>
+                `;
+
+                container.innerHTML = html;
+            }
+        }
+
+        function renderTimeline(data) {
+            const container = document.getElementById('timelineItems');
+            container.innerHTML = '';
+
+            const completed = data.sessionsCompleted || 0;
+
+            for (let i = 1; i <= 5; i++) {
+                const item = document.createElement('div');
+                item.className = 'timeline-item';
+
+                const circle = document.createElement('div');
+                circle.className = 'circle';
+
+                if (i <= completed) {
+                    circle.classList.add('completed');
+                    circle.innerHTML = '<i class="fas fa-check"></i>';
+                } else if (i === completed + 1) {
+                    circle.textContent = i;
+                    circle.style.borderColor = '#e8a838';
+                    circle.style.color = '#e8a838';
+                } else {
+                    circle.classList.add('locked');
+                    circle.innerHTML = '<i class="fas fa-lock"></i>';
+                }
+
+                const label = document.createElement('div');
+                label.className = 'label';
+                label.innerHTML = `
+                    <span class="session-num">Session ${i}</span>
+                    ${i <= completed ? '✅ Done' : (i === completed + 1 ? '📋 Ready' : '🔒 Locked')}
+                `;
+
+                item.appendChild(circle);
+                item.appendChild(label);
+                container.appendChild(item);
+            }
+        }
+
+        function renderGapAnalysis(data) {
+            const container = document.getElementById('gapGrid');
+            container.innerHTML = '';
+
+            if (!data.gaps) {
+                container.innerHTML =
+                    `<div style="text-align:center;padding:30px;color:#6c757d;grid-column:1/-1;">No gap data available.</div>`;
+                return;
+            }
+
+            const sortedGaps = Object.keys(data.gaps).sort((a, b) => data.gaps[b].gap - data.gaps[a].gap);
+
+            sortedGaps.forEach(key => {
+                const gap = data.gaps[key];
+                const severityClass = gap.severity.includes('Critical') ? 'critical' :
+                    gap.severity.includes('Moderate') ? 'moderate' :
+                    gap.severity.includes('Minor') ? 'minor' : 'compliant';
+
+                const item = document.createElement('div');
+                item.className = `gap-item ${severityClass}`;
+
+                const gapValue = gap.gap.toFixed(1);
+                const gapClass = gap.gap <= 0 ? 'positive' : (gap.gap <= 0.5 ? 'neutral' : 'negative');
+                const gapDisplay = gap.gap <= 0 ? '+' + Math.abs(gap.gap).toFixed(1) : '-' + gap.gap.toFixed(1);
+
+                item.innerHTML = `
+                    <div class="element-name">
+                        <span style="font-weight:700;color:#0a2e4a;">Element ${key}</span>
+                        <span style="font-weight:400;color:#6c757d;font-size:0.85rem;display:block;">${gap.name}</span>
+                        <span class="pillar-tag">${gap.pillar}</span>
+                    </div>
+                    <div class="score">
+                        <span class="current">${gap.current.toFixed(1)}</span>
+                        <span class="target">/ 5.0</span>
+                        <span class="gap-value ${gapClass}">${gapDisplay}</span>
+                    </div>
+                `;
+
+                container.appendChild(item);
+            });
+        }
+
+        function renderCAP(data) {
+            const container = document.getElementById('capGrid');
+            container.innerHTML = '';
+
+            if (!data.gaps) {
+                container.innerHTML =
+                    `<div style="grid-column:1/-1;text-align:center;padding:30px;color:#6c757d;">No corrective actions needed.</div>`;
+                return;
+            }
+
+            const pillarGroups = {};
+            for (const key in data.gaps) {
+                const gap = data.gaps[key];
+                if (gap.gap > 0.3) {
+                    if (!pillarGroups[gap.pillar]) pillarGroups[gap.pillar] = [];
+                    pillarGroups[gap.pillar].push({ key, gap });
+                }
+            }
+
+            if (Object.keys(pillarGroups).length === 0) {
+                container.innerHTML =
+                    `<div style="grid-column:1/-1;text-align:center;padding:30px;color:#28a745;">
+                        <i class="fas fa-check-circle" style="font-size:2rem;display:block;margin-bottom:10px;"></i>
+                        <h4 style="color:#28a745;">Excellent! No corrective actions needed.</h4>
+                    </div>`;
+                return;
+            }
+
+            const actionTemplates = {
+                'Policy': [
+                    'Review and update safety policy documents to align with ICAO Annex 19 requirements.',
+                    'Establish clear safety accountabilities and responsibilities at all organizational levels.',
+                    'Conduct management safety briefings to reinforce commitment to safety.',
+                    'Develop a safety policy communication plan for all employees.'
+                ],
+                'Risk Management': [
+                    'Implement a formal hazard identification and risk assessment process.',
+                    'Develop risk mitigation strategies with clear timelines and responsibilities.',
+                    'Conduct regular risk assessment training for all relevant personnel.',
+                    'Establish a risk register to track and monitor identified hazards.'
+                ],
+                'Assurance': [
+                    'Establish safety performance indicators (SPIs) to monitor safety performance.',
+                    'Implement a regular internal safety audit program.',
+                    'Develop a management of change process for operational changes.',
+                    'Create a continuous improvement framework for safety management.'
+                ],
+                'Promotion': [
+                    'Develop and implement a comprehensive safety training program.',
+                    'Establish effective safety communication channels across the organization.',
+                    'Foster a positive safety culture through leadership engagement.',
+                    'Implement a safety recognition and rewards program.'
+                ]
+            };
+
+            const severityOrder = { 'Critical Gap': 0, 'Moderate Gap': 1, 'Minor Gap': 2 };
+
+            for (const pillar in pillarGroups) {
+                pillarGroups[pillar].sort((a, b) => {
+                    return severityOrder[a.gap.severity] - severityOrder[b.gap.severity];
+                });
+
+                const topGap = pillarGroups[pillar][0];
+                const severity = topGap.gap.severity;
+                const priorityClass = severity.includes('Critical') ? 'high' :
+                    severity.includes('Moderate') ? 'medium' : 'low';
+                const priorityLabel = severity.includes('Critical') ? 'HIGH' :
+                    severity.includes('Moderate') ? 'MEDIUM' : 'LOW';
+
+                const actions = actionTemplates[pillar] || ['Review and improve safety management practices.'];
+
+                const card = document.createElement('div');
+                card.className = `cap-item priority-${priorityClass}`;
+                card.innerHTML = `
+                    <div class="cap-header">
+                        <span class="cap-pillar"><i class="fas ${PILLAR_ICONS[pillar]}"></i> ${pillar}</span>
+                        <span class="cap-priority ${priorityClass}">${priorityLabel} PRIORITY</span>
+                    </div>
+                    <div class="cap-title">${pillar} Improvement Plan</div>
+                    <div class="cap-current">
+                        Current score: ${topGap.gap.current.toFixed(1)}/5.0 | Gap: ${topGap.gap.gap.toFixed(1)} points
+                        ${pillarGroups[pillar].length > 1 ? `| ${pillarGroups[pillar].length} elements affected` : ''}
+                    </div>
+                    <div class="cap-action">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Recommended Actions:</strong>
+                        <ul style="margin-top:5px;padding-left:20px;font-size:0.85rem;color:#495057;">
+                            ${actions.slice(0, 3).map(a => `<li>${a}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        function renderRecommendations(data) {
+            const container = document.getElementById('recommendationsList');
+            container.innerHTML = '';
+
+            if (!data.gaps) {
+                container.innerHTML =
+                    `<div style="text-align:center;padding:30px;color:#6c757d;">No recommendations available.</div>`;
+                return;
+            }
+
+            const recommendations = [];
+            for (const key in data.gaps) {
+                const gap = data.gaps[key];
+                if (gap.gap > 0.3) {
+                    recommendations.push({
+                        element: key,
+                        name: gap.name,
+                        pillar: gap.pillar,
+                        current: gap.current,
+                        gap: gap.gap,
+                        severity: gap.severity
+                    });
+                }
+            }
+
+            if (recommendations.length === 0) {
+                container.innerHTML =
+                    `<div style="text-align:center;padding:30px;color:#28a745;">
+                        <i class="fas fa-check-circle" style="font-size:2rem;display:block;margin-bottom:10px;"></i>
+                        <h4 style="color:#28a745;">Excellent! No significant gaps identified.</h4>
+                    </div>`;
+                return;
+            }
+
+            recommendations.sort((a, b) => b.gap - a.gap);
+
+            recommendations.forEach((rec, index) => {
+                const priority = rec.severity.includes('Critical') ? 'high' :
+                    rec.severity.includes('Moderate') ? 'medium' : 'low';
+
+                const item = document.createElement('div');
+                item.className = 'recommendation-item';
+                item.innerHTML = `
+                    <div class="priority ${priority}">${index + 1}</div>
+                    <div class="content">
+                        <div class="title">Element ${rec.element}: ${rec.name}</div>
+                        <div class="description">
+                            Current score: ${rec.current.toFixed(1)}/5.0. Gap of ${rec.gap.toFixed(1)} points from target (4.5/5).
+                        </div>
+                        <div class="meta">
+                            <i class="fas fa-tag"></i> ${rec.severity}
+                            <span style="margin-left:15px;"><i class="fas fa-building"></i> ${rec.pillar}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // ============================================================
+        // RENDER CHARTS
+        // ============================================================
+        function renderCharts(data) {
+            const ctx1 = document.getElementById('elementChart').getContext('2d');
+            let labels = [],
+                scores = [],
+                colors = [];
+
+            if (data.elementAverages) {
+                const sortedKeys = Object.keys(data.elementAverages).sort((a, b) => parseInt(a) - parseInt(b));
+                labels = sortedKeys.map(key => `E${key}`);
+                scores = sortedKeys.map(key => data.elementAverages[key]);
+
+                colors = scores.map(score => {
+                    if (score >= 4.0) return '#28a745';
+                    if (score >= 3.0) return '#ffc107';
+                    if (score >= 2.0) return '#fd7e14';
+                    return '#dc3545';
+                });
+            } else {
+                labels = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'E10', 'E11', 'E12'];
+                scores = new Array(12).fill(0);
+                colors = new Array(12).fill('#dee2e6');
+            }
+
+            if (elementChart) elementChart.destroy();
+
+            elementChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Score (out of 5)',
+                        data: scores,
+                        backgroundColor: colors,
+                        borderColor: colors.map(c => c),
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        maxBarThickness: 35
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Score: ${context.parsed.y.toFixed(1)} / 5.0`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { min: 0, max: 5, ticks: { stepSize: 1 }, title: { display: true, text: 'Score' } }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('gapChart').getContext('2d');
+            let gapLabels = [],
+                gapData = [],
+                gapColors = [];
+
+            if (data.gaps) {
+                const sortedGaps = Object.keys(data.gaps).sort((a, b) => data.gaps[b].gap - data.gaps[a].gap);
+                gapLabels = sortedGaps.map(key => `E${key}`);
+                gapData = sortedGaps.map(key => data.gaps[key].gap);
+                gapColors = gapData.map(gap => {
+                    if (gap <= 0) return '#28a745';
+                    if (gap <= 0.5) return '#ffc107';
+                    if (gap <= 1.0) return '#fd7e14';
+                    return '#dc3545';
+                });
+            } else {
+                gapLabels = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'E10', 'E11', 'E12'];
+                gapData = new Array(12).fill(0);
+                gapColors = new Array(12).fill('#dee2e6');
+            }
+
+            if (gapChart) gapChart.destroy();
+
+            gapChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: gapLabels,
+                    datasets: [{
+                        label: 'Gap to Target (4.5)',
+                        data: gapData,
+                        backgroundColor: gapColors,
+                        borderColor: gapColors.map(c => c),
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        maxBarThickness: 35
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const gap = context.parsed.y;
+                                    if (gap <= 0) return `✅ Compliant (${Math.abs(gap).toFixed(1)} above target)`;
+                                    return `⚠️ Gap: ${gap.toFixed(1)} points`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { min: 0, max: 2.5, ticks: { stepSize: 0.5 }, title: { display: true, text: 'Gap Size' } }
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        // EXPORT FUNCTIONS
+        // ============================================================
+        function exportPDF() {
+            const element = document.getElementById('analyticsContent');
+
+            const btn = document.querySelector('.btn-export.pdf');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+            btn.disabled = true;
+
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: `SMS_Gap_Analysis_${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+
+            html2pdf().set(opt).from(element).save().then(function() {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                console.log('✅ PDF exported successfully');
+            }).catch(function(err) {
+                console.error('PDF export failed:', err);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                alert('PDF export failed. Please try using "Print Report" and select "Save as PDF".');
+            });
+        }
+
+        function exportExcel() {
+            let data = null;
+            if (userRole === 'caan' || userRole === 'admin') {
+                if (selectedFilter === 'all') {
+                    data = consolidateAirlineData();
+                } else {
+                    data = allAirlineData[selectedFilter] || null;
+                }
+            } else {
+                data = allAirlineData[tenantId] || null;
+            }
+
+            if (!data) {
+                alert('No data to export. Complete at least one survey session first.');
+                return;
+            }
+
+            let csv = 'SMS Gap Analysis Report\n';
+            csv += `Generated: ${new Date().toLocaleString()}\n`;
+            csv += `Airline: ${data.name}\n`;
+            csv += `Role: ${userRole.toUpperCase()}\n\n`;
+
+            csv += 'PILLAR SUMMARY\n';
+            csv += 'Pillar,Average Score,Status\n';
+            for (const pillar in data.pillarAverages) {
+                const score = data.pillarAverages[pillar] || 0;
+                const status = score >= 4.0 ? 'Strong' : (score >= 3.0 ? 'Moderate' : 'Weak');
+                csv += `${pillar},${score.toFixed(1)},${status}\n`;
+            }
+            csv += '\n';
+
+            csv += 'ELEMENT DETAILS\n';
+            csv += 'Element,Name,Pillar,Current Score,Target Score,Gap,Severity\n';
+            for (const key in data.gaps) {
+                const gap = data.gaps[key];
+                csv +=
+                    `Element ${key},${gap.name},${gap.pillar},${gap.current.toFixed(1)},4.5,${gap.gap.toFixed(1)},${gap.severity}\n`;
+            }
+
+            csv += '\nSUMMARY\n';
+            csv += `Total Sessions,${data.totalSessions || 5}\n`;
+            csv += `Completed Sessions,${data.sessionsCompleted || 0}\n`;
+            csv += `Overall Average,${(data.overallAverage || 0).toFixed(1)}\n`;
+            csv += `Critical Gaps,${data.criticalGaps || 0}\n`;
+
+            if (data.isConsolidated && data.airlineData) {
+                csv += '\nAIRLINE BREAKDOWN\n';
+                csv += 'Airline,Overall Score,Policy,Risk Management,Assurance,Promotion,Critical Gaps,Completion Date\n';
+                data.airlineData.forEach(airline => {
+                    const date = airline.completionDate ? new Date(airline.completionDate).toLocaleDateString() : 'Pending';
+                    csv +=
+                        `${airline.name},${(airline.overallAverage || 0).toFixed(1)},${(airline.pillarAverages.Policy || 0).toFixed(1)},${(airline.pillarAverages['Risk Management'] || 0).toFixed(1)},${(airline.pillarAverages.Assurance || 0).toFixed(1)},${(airline.pillarAverages.Promotion || 0).toFixed(1)},${airline.criticalGaps || 0},${date}\n`;
+                });
+            }
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download =
+                `SMS_Gap_Analysis_${data.name.replace(/\s/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            alert('✅ Excel export complete! The file has been downloaded.');
+        }
+
+        // ============================================================
+        // KEYBOARD SHORTCUTS
+        // ============================================================
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'd' || e.key === 'D') goToDashboard();
+            if (e.key === 'p' || e.key === 'P') window.print();
+            if (e.key === 'r' || e.key === 'R') location.reload();
+            if (e.key === 'Escape') goToDashboard();
+        });
+
+        // ============================================================
+        // EXPOSE FOR TESTING
+        // ============================================================
+        window.__analytics = {
+            allAirlineData,
+            consolidateAirlineData,
+            applyFilter,
+            goToDashboard,
+            exportPDF,
+            exportExcel,
+            applyDateFilter,
+            clearDateFilter,
+            setPresetFilter,
+            updateComplianceStats
+        };
+
+        console.log('📊 Analytics Dashboard Loaded');
+        console.log(`🎭 Role: ${userRole}`);
+        console.log(`✈️ Airline: ${userAirline}`);
+        console.log('📋 Available commands:');
+        console.log('  window.__analytics.applyFilter() - Apply airline filter');
+        console.log('  window.__analytics.applyDateFilter() - Apply date filter (CAAN)');
+        console.log('  window.__analytics.clearDateFilter() - Clear date filter (CAAN)');
+        console.log('  window.__analytics.exportPDF() - Export as PDF');
+        console.log('  window.__analytics.exportExcel() - Export as Excel');
+        console.log('  window.__analytics.goToDashboard() - Go to dashboard');
+        console.log('💡 CAAN users: Date filter allows survey period tracking');
+    </script>
+</body>
+</html>

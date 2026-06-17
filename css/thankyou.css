@@ -1,0 +1,254 @@
+/*
+================================================================================
+FILE: SurveySMS/css/thankyou.css
+VERSION: 1.0
+REVISION DATE: 2026-06-17
+PURPOSE: Thank You page specific styles
+AFFECTED: thankyou.html
+================================================================================
+*/
+
+/* ===== Thank You Wrapper ===== */
+.thankyou-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    padding: 20px;
+}
+
+.thankyou-container {
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+    padding: 60px 50px;
+    max-width: 700px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ===== Decorative Top Bar ===== */
+.thankyou-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, var(--secondary), var(--secondary-light), var(--secondary));
+}
+
+/* ===== Language Toggle ===== */
+.thankyou-language {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.thankyou-language .lang-toggle-btn {
+    padding: 6px 16px;
+    border: 2px solid var(--gray-300);
+    border-radius: 50px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: var(--transition);
+    color: var(--gray-600);
+}
+
+.thankyou-language .lang-toggle-btn:hover {
+    border-color: var(--primary);
+}
+
+.thankyou-language .lang-toggle-btn.active {
+    border-color: var(--secondary);
+    background: var(--secondary-light);
+    color: var(--primary);
+}
+
+/* ===== Namaste Logo ===== */
+.namaste-logo {
+    margin: 10px auto 25px auto;
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, var(--gray-100), var(--gray-200));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 4px solid var(--secondary);
+    box-shadow: 0 8px 30px rgba(232, 168, 56, 0.3);
+    position: relative;
+    animation: float 3s ease-in-out infinite;
+}
+
+.namaste-logo svg {
+    width: 75px;
+    height: 75px;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+/* ===== Typography ===== */
+.thankyou-container h1 {
+    color: var(--primary);
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+.thankyou-container .subtitle {
+    color: var(--secondary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 25px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.thankyou-container .message {
+    color: #495057;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    margin-bottom: 30px;
+    padding: 0 10px;
+}
+
+.thankyou-container .message strong {
+    color: var(--primary);
+}
+
+.thankyou-container .message .highlight {
+    color: var(--secondary);
+    font-weight: 700;
+}
+
+/* ===== Divider ===== */
+.divider-line {
+    width: 80px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--secondary), var(--secondary-light));
+    margin: 20px auto;
+    border-radius: 2px;
+}
+
+/* ===== Footer Note ===== */
+.thankyou-container .footer-note {
+    color: var(--gray-600);
+    font-size: 0.85rem;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.thankyou-container .footer-note i {
+    color: var(--secondary);
+}
+
+.thankyou-container .footer-note .namaste-text {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary);
+    display: block;
+    margin-bottom: 5px;
+}
+
+.thankyou-container .footer-note .namaste-meaning {
+    font-size: 0.9rem;
+    color: var(--primary);
+    font-weight: 500;
+    display: block;
+    margin-bottom: 15px;
+}
+
+/* ===== Home Button ===== */
+.btn-home {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 14px 40px;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-top: 10px;
+    text-decoration: none;
+}
+
+.btn-home:hover {
+    background: var(--primary-light);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(10, 46, 74, 0.3);
+}
+
+.btn-home i {
+    font-size: 1.1rem;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 640px) {
+    .thankyou-container {
+        padding: 40px 25px;
+    }
+
+    .namaste-logo {
+        width: 90px;
+        height: 90px;
+    }
+
+    .namaste-logo svg {
+        width: 55px;
+        height: 55px;
+    }
+
+    .thankyou-container h1 {
+        font-size: 1.8rem;
+    }
+
+    .thankyou-container .message {
+        font-size: 1rem;
+        padding: 0;
+    }
+
+    .btn-home {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .thankyou-language {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 400px) {
+    .thankyou-container {
+        padding: 30px 20px;
+    }
+
+    .namaste-logo {
+        width: 75px;
+        height: 75px;
+    }
+
+    .namaste-logo svg {
+        width: 45px;
+        height: 45px;
+    }
+
+    .thankyou-container h1 {
+        font-size: 1.5rem;
+    }
+}

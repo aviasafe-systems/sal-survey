@@ -1,0 +1,127 @@
+<!--
+================================================================================
+FILE: SurveySMS/thankyou.html
+VERSION: 10.0
+REVISION DATE: 2026-06-17
+PURPOSE: Thank you page shown after survey completion or exit
+REVISED PURPOSE: Added English/Nepali language support, external CSS/JS
+AFFECTED: All users after completing or exiting the survey
+================================================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title id="pageTitle">Thank You - AviaSafeSystems</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="css/global.css" />
+    <link rel="stylesheet" href="css/thankyou.css" />
+
+    <!-- External JS -->
+    <script src="js/translations.js"></script>
+    <script src="js/thankyou.js"></script>
+</head>
+<body>
+
+    <div class="thankyou-wrapper">
+        <div class="thankyou-container">
+
+            <!-- ===== LANGUAGE TOGGLE ===== -->
+            <div class="thankyou-language">
+                <button class="lang-toggle-btn" id="langToggle" onclick="toggleLanguage()">🇳🇵 नेपाली</button>
+            </div>
+
+            <!-- ===== NAMASTE LOGO ===== -->
+            <div class="namaste-logo">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Two hands in Namaste position -->
+                    <g transform="translate(50, 55)">
+                        <!-- Left hand -->
+                        <g transform="translate(-18, 0)">
+                            <!-- Palm -->
+                            <ellipse cx="0" cy="8" rx="12" ry="18" fill="#e8a838" opacity="0.9"/>
+                            <!-- Thumb -->
+                            <rect x="-4" y="-10" width="6" height="14" rx="3" fill="#d4952a" transform="rotate(-15, -1, -3)"/>
+                            <!-- Fingers -->
+                            <rect x="-8" y="-8" width="4" height="16" rx="2" fill="#d4952a" transform="rotate(-5, -6, 0)"/>
+                            <rect x="-3" y="-10" width="4" height="18" rx="2" fill="#d4952a"/>
+                            <rect x="2" y="-10" width="4" height="18" rx="2" fill="#d4952a"/>
+                            <rect x="7" y="-8" width="4" height="16" rx="2" fill="#d4952a" transform="rotate(5, 9, 0)"/>
+                        </g>
+                        <!-- Right hand -->
+                        <g transform="translate(18, 0)">
+                            <!-- Palm -->
+                            <ellipse cx="0" cy="8" rx="12" ry="18" fill="#e8a838" opacity="0.9"/>
+                            <!-- Thumb -->
+                            <rect x="-2" y="-10" width="6" height="14" rx="3" fill="#d4952a" transform="rotate(15, 1, -3)"/>
+                            <!-- Fingers -->
+                            <rect x="-7" y="-8" width="4" height="16" rx="2" fill="#d4952a" transform="rotate(5, -5, 0)"/>
+                            <rect x="-2" y="-10" width="4" height="18" rx="2" fill="#d4952a"/>
+                            <rect x="3" y="-10" width="4" height="18" rx="2" fill="#d4952a"/>
+                            <rect x="8" y="-8" width="4" height="16" rx="2" fill="#d4952a" transform="rotate(-5, 10, 0)"/>
+                        </g>
+                        <!-- Small circle between hands (symbolic glow) -->
+                        <circle cx="0" cy="-2" r="6" fill="#f5d68a" opacity="0.6"/>
+                        <circle cx="0" cy="-2" r="3" fill="#e8a838" opacity="0.8"/>
+                    </g>
+                    <!-- Namaste text below -->
+                    <text x="50" y="92" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-size="12" font-weight="700" fill="#0a2e4a" letter-spacing="2">NAMASKAR</text>
+                </svg>
+            </div>
+
+            <!-- ===== TITLE ===== -->
+            <h1 id="thankyouTitle">Thank You!</h1>
+            <div class="subtitle" id="thankyouSubtitle">धन्यवाद</div>
+
+            <!-- ===== DIVIDER ===== -->
+            <div class="divider-line"></div>
+
+            <!-- ===== MESSAGE ===== -->
+            <div class="message" id="thankyouMessage">
+                <strong>Dear Valued Partner,</strong><br><br>
+                We sincerely thank you for the opportunity provided to
+                <strong class="highlight">AviaSafeSystems</strong> to demonstrate our commitment
+                to enhancing operational safety in the aviation industry.<br><br>
+                Your time and participation in this survey demonstration reflects your dedication
+                to safety excellence and continuous improvement.<br><br>
+                <span style="font-size: 0.95rem; color: var(--gray-600);">
+                    <i class="fas fa-plane" style="color: var(--secondary);"></i>
+                    Together, we build a safer aviation future.
+                    <i class="fas fa-plane" style="color: var(--secondary);"></i>
+                </span>
+            </div>
+
+            <!-- ===== FOOTER NOTE ===== -->
+            <div class="footer-note">
+                <span class="namaste-text" id="namasteText">🙏 NAMASTE 🙏</span>
+                <span class="namaste-meaning" id="namasteMeaning">"May the divine light in me, honor the divine light in you."</span>
+
+                <button class="btn-home" onclick="goHome()">
+                    <i class="fas fa-home"></i> <span id="homeBtnText">Return to Home</span>
+                </button>
+
+                <br><br>
+                <i class="fas fa-shield-alt"></i>
+                <span id="footerText">AviaSafeSystems.com &bull; ICAO Annex 19 SMS Platform</span>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // ADDITIONAL: Handle page load
+        // ============================================================
+        console.log('🙏 Thank You page ready with English/Nepali support');
+        console.log('💡 Click the language toggle to switch between English and Nepali');
+        console.log('💡 Press Enter or "H" to return home');
+    </script>
+
+</body>
+</html>
