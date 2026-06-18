@@ -1,10 +1,10 @@
 /*
 ================================================================================
 FILE: SurveySMS/js/survey.js
-VERSION: 1.0.1
-REVISION DATE: 2026-06-17
-PURPOSE: Survey page logic - handles questions, answers, navigation, language
-DEPENDENCIES: utils.js, storage.js, auth.js, translations.js
+VERSION: 2.0.0
+REVISION DATE: 2026-06-18
+PURPOSE: Survey page logic - handles 20 questions with mixed response types (Yes/No, Likert, Text)
+DEPENDENCIES: utils.js, storage.js, auth.js, translations.js, question-bank.js
 USAGE: survey/survey.html
 AUTHOR: Ghanshyam Acharya
 CODE OWNER: aviasafetysystems.com
@@ -14,41 +14,40 @@ CODE OWNER: aviasafetysystems.com
 // ============================================================
 // CONFIGURATION
 // ============================================================
-const QUESTIONS_PER_SESSION = 24;
-const TOTAL_ELEMENTS = 12;
-const QUESTIONS_PER_ELEMENT = 2;
+const QUESTIONS_PER_SESSION = 20;
+const TOTAL_SECTIONS = 4;
 
 // ============================================================
 // AIRLINE PURPOSES (Localized)
 // ============================================================
 const AIRLINE_PURPOSES = {
     'sita-air': {
-        en: 'Sita Air is conducting this survey to assess our safety culture, identify strengths, and develop corrective action plans in alignment with ICAO Annex 19 requirements.',
-        np: 'सीता एयरले ICAO Annex 19 आवश्यकताहरू अनुरूप हाम्रो सुरक्षा संस्कृति मूल्याङ्कन गर्न, बलियो पक्षहरू पहिचान गर्न, र सुधारात्मक कार्य योजनाहरू विकास गर्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
+        en: 'Sita Air is conducting this safety culture survey to assess our safety climate, identify strengths, and develop corrective action plans in alignment with ICAO Annex 19 requirements.',
+        np: 'सीता एयरले ICAO Annex 19 आवश्यकताहरू अनुरूप हाम्रो सुरक्षा वातावरण मूल्याङ्कन गर्न, बलियो पक्षहरू पहिचान गर्न, र सुधारात्मक कार्य योजनाहरू विकास गर्न यो सुरक्षा संस्कृति सर्वेक्षण सञ्चालन गरिरहेको छ।'
     },
     'tara-air': {
-        en: 'Tara Air is conducting this survey to evaluate our safety management system and ensure compliance with international safety standards.',
-        np: 'तारा एयरले हाम्रो सुरक्षा व्यवस्थापन प्रणालीको मूल्याङ्कन गर्न र अन्तर्राष्ट्रिय सुरक्षा मापदण्डहरूको अनुपालन सुनिश्चित गर्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
+        en: 'Tara Air is conducting this safety culture survey to evaluate our safety management system and ensure compliance with international safety standards.',
+        np: 'तारा एयरले हाम्रो सुरक्षा व्यवस्थापन प्रणालीको मूल्याङ्कन गर्न र अन्तर्राष्ट्रिय सुरक्षा मापदण्डहरूको अनुपालन सुनिश्चित गर्न यो सुरक्षा संस्कृति सर्वेक्षण सञ्चालन गरिरहेको छ।'
     },
     'summit-air': {
-        en: 'Summit Air is conducting this survey to strengthen our safety culture and operational excellence through employee feedback.',
-        np: 'समिट एयरले कर्मचारी प्रतिक्रिया मार्फत हाम्रो सुरक्षा संस्कृति र परिचालन उत्कृष्टता बलियो बनाउन यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
+        en: 'Summit Air is conducting this safety culture survey to strengthen our safety culture and operational excellence through employee feedback.',
+        np: 'समिट एयरले कर्मचारी प्रतिक्रिया मार्फत हाम्रो सुरक्षा संस्कृति र परिचालन उत्कृष्टता बलियो बनाउन यो सुरक्षा संस्कृति सर्वेक्षण सञ्चालन गरिरहेको छ।'
     },
     'buddha-air': {
-        en: 'Buddha Air is conducting this survey to enhance our safety performance and maintain the highest standards of aviation safety.',
-        np: 'बुद्ध एयरले हाम्रो सुरक्षा प्रदर्शन बढाउन र विमानन सुरक्षाको उच्चतम मापदण्डहरू कायम राख्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
+        en: 'Buddha Air is conducting this safety culture survey to enhance our safety performance and maintain the highest standards of aviation safety.',
+        np: 'बुद्ध एयरले हाम्रो सुरक्षा प्रदर्शन बढाउन र विमानन सुरक्षाको उच्चतम मापदण्डहरू कायम राख्न यो सुरक्षा संस्कृति सर्वेक्षण सञ्चालन गरिरहेको छ।'
     },
     'yeti-airlines': {
-        en: 'Yeti Airlines is conducting this survey to assess our safety management practices and drive continuous improvement.',
-        np: 'यती एयरलाइन्सले हाम्रो सुरक्षा व्यवस्थापन अभ्यासहरूको मूल्याङ्कन गर्न र निरन्तर सुधारलाई अगाडि बढाउन यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
+        en: 'Yeti Airlines is conducting this safety culture survey to assess our safety management practices and drive continuous improvement.',
+        np: 'यती एयरलाइन्सले हाम्रो सुरक्षा व्यवस्थापन अभ्यासहरूको मूल्याङ्कन गर्न र निरन्तर सुधारलाई अगाडि बढाउन यो सुरक्षा संस्कृति सर्वेक्षण सञ्चालन गरिरहेको छ।'
     },
     'shree-airlines': {
-        en: 'Shree Airlines is conducting this survey to evaluate our safety culture and risk management processes.',
-        np: 'श्री एयरलाइन्सले हाम्रो सुरक्षा संस्कृति र जोखिम व्यवस्थापन प्रक्रियाहरूको मूल्याङ्कन गर्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
+        en: 'Shree Airlines is conducting this safety culture survey to evaluate our safety culture and risk management processes.',
+        np: 'श्री एयरलाइन्सले हाम्रो सुरक्षा संस्कृति र जोखिम व्यवस्थापन प्रक्रियाहरूको मूल्याङ्कन गर्न यो सुरक्षा संस्कृति सर्वेक्षण सञ्चालन गरिरहेको छ।'
     },
     'danfe-air': {
-        en: 'Danfe Air is conducting this survey to assess our safety management system and commitment to aviation safety excellence.',
-        np: 'दान्फे एयरले हाम्रो सुरक्षा व्यवस्थापन प्रणाली र विमानन सुरक्षा उत्कृष्टताप्रतिको प्रतिबद्धताको मूल्याङ्कन गर्न यो सर्वेक्षण सञ्चालन गरिरहेको छ।'
+        en: 'Danfe Air is conducting this safety culture survey to assess our safety management system and commitment to aviation safety excellence.',
+        np: 'दान्फे एयरले हाम्रो सुरक्षा व्यवस्थापन प्रणाली र विमानन सुरक्षा उत्कृष्टताप्रतिको प्रतिबद्धताको मूल्याङ्कन गर्न यो सुरक्षा संस्कृति सर्वेक्षण सञ्चालन गरिरहेको छ।'
     }
 };
 
@@ -58,6 +57,7 @@ const AIRLINE_PURPOSES = {
 let currentQuestion = 0;
 let answers = [];
 let selectedValue = null;
+let textAnswer = '';
 let tenantId = null;
 let airlineName = null;
 let userData = null;
@@ -65,10 +65,10 @@ let questions = [];
 let isAnswerSaved = false;
 let currentLang = 'en';
 let sessionNumber = 1;
-let answeredCount = 0;  // ✅ Track answered count separately
+let answeredCount = 0;
 
 // ============================================================
-// ELEMENT NAMES
+// ELEMENT NAMES (For ICAO Mapping)
 // ============================================================
 function getElementName(num) {
     const names = {
@@ -97,24 +97,40 @@ function getLocalizedPurpose(tenantId, lang) {
         return purpose[lang] || purpose['en'];
     }
     const defaultPurpose = {
-        en: 'This survey is being conducted to assess our safety management system and compliance with ICAO Annex 19.',
-        np: 'यो सर्वेक्षण हाम्रो सुरक्षा व्यवस्थापन प्रणाली र ICAO Annex 19 को अनुपालनको मूल्याङ्कन गर्न सञ्चालन गरिँदैछ।'
+        en: 'This safety culture survey is being conducted to assess our safety management system and compliance with ICAO Annex 19.',
+        np: 'यो सुरक्षा संस्कृति सर्वेक्षण हाम्रो सुरक्षा व्यवस्थापन प्रणाली र ICAO Annex 19 को अनुपालनको मूल्याङ्कन गर्न सञ्चालन गरिँदैछ।'
     };
     return defaultPurpose[lang] || defaultPurpose['en'];
+}
+
+// ============================================================
+// GET SECTION NAME
+// ============================================================
+function getSectionName(sectionId, lang = 'en') {
+    const names = {
+        'A': { en: 'Safety Policy', np: 'सुरक्षा नीति' },
+        'B': { en: 'Hazard Reporting Culture', np: 'जोखिम रिपोर्टिङ संस्कृति' },
+        'C': { en: 'Safety Guidance from SMS', np: 'SMS बाट सुरक्षा मार्गदर्शन' },
+        'D': { en: 'Employee Feelings About SMS', np: 'SMS बारे कर्मचारीको भावना' }
+    };
+    return names[sectionId]?.[lang] || names[sectionId]?.['en'] || sectionId;
 }
 
 // ============================================================
 // INITIALIZATION
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('📝 Survey Page Loaded');
+    console.log('📝 Survey Page Loaded (v2.0.0)');
 
     // Get URL params
     const urlParams = new URLSearchParams(window.location.search);
     tenantId = urlParams.get('tenant') || 'default';
     sessionNumber = parseInt(urlParams.get('session')) || 1;
 
-    // Check authentication
+    // ============================================================
+    // 🔐 AUTHENTICATION USING AUTH MODULE
+    // ============================================================
+    
     if (typeof getCurrentUser === 'function') {
         userData = getCurrentUser();
     } else {
@@ -131,8 +147,8 @@ document.addEventListener('DOMContentLoaded', function() {
     currentLang = urlParams.get('lang') || userData.language || 'en';
 
     // Update page title
-    document.title = `Safety Management Survey - ${airlineName}`;
-    document.getElementById('surveyTitle').textContent = 'Safety Management Survey';
+    document.title = `Safety Culture Survey - ${airlineName}`;
+    document.getElementById('surveyTitle').textContent = 'Safety Culture Survey';
     document.getElementById('airlineName').textContent = airlineName;
 
     // Update airline purpose
@@ -142,37 +158,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update language toggle
     updateLanguageToggle();
 
-    // Generate questions
-    generateQuestions();
-
-    // ✅ Initialize answers array
-    answers = new Array(QUESTIONS_PER_SESSION).fill(null);
-    answeredCount = 0;
+    // ============================================================
+    // LOAD QUESTIONS FROM QUESTION BANK
+    // ============================================================
+    loadQuestions();
 
     // Check for saved progress
-    const savedAnswers = localStorage.getItem(`sms_${tenantId}_session_${sessionNumber}_answers`);
-    
-    if (savedAnswers) {
-        try {
-            const parsed = JSON.parse(savedAnswers);
-            if (parsed && parsed.length === QUESTIONS_PER_SESSION) {
-                answers = parsed;
-                // ✅ Count actual answered questions
-                answeredCount = answers.filter(a => a !== null && a !== undefined).length;
-                console.log(`📂 Loaded saved progress: ${answeredCount} answered`);
-            }
-        } catch (e) {
-            console.warn('Failed to parse saved answers:', e);
-        }
-    }
-
-    // Find first unanswered question
-    const firstUnanswered = answers.findIndex(a => a === null || a === undefined);
-    currentQuestion = firstUnanswered !== -1 ? firstUnanswered : 0;
-    
-    // ✅ Only set selectedValue if there's a saved answer for this question
-    selectedValue = answers[currentQuestion] !== null && answers[currentQuestion] !== undefined ? answers[currentQuestion] : null;
-    isAnswerSaved = selectedValue !== null;
+    loadSavedProgress();
 
     // Render
     document.getElementById('sessionBadge').textContent = `Session ${sessionNumber}`;
@@ -186,6 +178,86 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log(`📊 ${answeredCount} of ${QUESTIONS_PER_SESSION} answered`);
     console.log(`📍 Current question: ${currentQuestion + 1}`);
 });
+
+// ============================================================
+// LOAD QUESTIONS FROM QUESTION BANK
+// ============================================================
+function loadQuestions() {
+    // Use the global QuestionBank if available
+    if (typeof window !== 'undefined' && window.QuestionBank) {
+        try {
+            questions = window.QuestionBank.getSessionQuestions(sessionNumber, currentLang);
+            console.log(`✅ Loaded ${questions.length} questions from QuestionBank`);
+            return;
+        } catch (e) {
+            console.warn('Failed to load from QuestionBank:', e);
+        }
+    }
+    
+    // Fallback: Generate default questions
+    console.warn('⚠️ QuestionBank not available, using fallback questions');
+    generateFallbackQuestions();
+}
+
+function generateFallbackQuestions() {
+    questions = [];
+    // Generate 20 generic questions as fallback
+    for (let i = 0; i < QUESTIONS_PER_SESSION; i++) {
+        questions.push({
+            id: `q${i + 1}`,
+            sectionId: String.fromCharCode(65 + Math.floor(i / 5)),
+            sectionName: `Section ${String.fromCharCode(65 + Math.floor(i / 5))}`,
+            text: `Question ${i + 1}: Please rate the following statement.`,
+            type: 'likert',
+            options: [
+                { value: 1, label: 'Strongly Disagree' },
+                { value: 2, label: 'Disagree' },
+                { value: 3, label: 'No opinion' },
+                { value: 4, label: 'Agree' },
+                { value: 5, label: 'Strongly Agree' }
+            ],
+            placeholder: ''
+        });
+    }
+}
+
+// ============================================================
+// LOAD SAVED PROGRESS
+// ============================================================
+function loadSavedProgress() {
+    const savedAnswers = localStorage.getItem(`sms_${tenantId}_session_${sessionNumber}_answers`);
+    
+    // Initialize answers array
+    answers = new Array(QUESTIONS_PER_SESSION).fill(null);
+    textAnswer = '';
+    
+    if (savedAnswers) {
+        try {
+            const parsed = JSON.parse(savedAnswers);
+            if (parsed && parsed.length === QUESTIONS_PER_SESSION) {
+                answers = parsed;
+                answeredCount = answers.filter(a => a !== null && a !== undefined).length;
+                console.log(`📂 Loaded saved progress: ${answeredCount} answered`);
+            }
+        } catch (e) {
+            console.warn('Failed to parse saved answers:', e);
+        }
+    }
+
+    // Find first unanswered question
+    const firstUnanswered = answers.findIndex(a => a === null || a === undefined);
+    currentQuestion = firstUnanswered !== -1 ? firstUnanswered : 0;
+    
+    // Set selected value if answer exists for current question
+    const currentAnswer = answers[currentQuestion];
+    if (currentAnswer !== null && currentAnswer !== undefined) {
+        selectedValue = currentAnswer;
+        isAnswerSaved = true;
+    } else {
+        selectedValue = null;
+        isAnswerSaved = false;
+    }
+}
 
 // ============================================================
 // LANGUAGE FUNCTIONS
@@ -210,7 +282,7 @@ function toggleLanguage() {
 function updateTranslations() {
     const t = (key) => getTranslation(key, currentLang);
     
-    document.getElementById('surveyTitle').textContent = t('survey_title') || 'Safety Management Survey';
+    document.getElementById('surveyTitle').textContent = t('survey_title') || 'Safety Culture Survey';
     
     const progressLabel = document.querySelector('.progress-label span:first-child');
     if (progressLabel) progressLabel.textContent = t('progress_label') || 'Survey Progress';
@@ -238,50 +310,81 @@ function updateTranslations() {
 }
 
 // ============================================================
-// QUESTION GENERATION
-// ============================================================
-function generateQuestions() {
-    questions = [];
-    for (let i = 0; i < QUESTIONS_PER_SESSION; i++) {
-        const elementIndex = Math.floor(i / QUESTIONS_PER_ELEMENT);
-        const elementNum = elementIndex + 1;
-
-        const questionTexts = [
-            `How would you rate your organization's implementation of ${getElementName(elementNum)}?`,
-            `How effective is your organization's approach to ${getElementName(elementNum)}?`,
-            `How well does your organization manage ${getElementName(elementNum)}?`,
-            `What is your assessment of your organization's ${getElementName(elementNum)}?`,
-            `How confident are you in your organization's ${getElementName(elementNum)}?`
-        ];
-
-        const textIndex = (i % questionTexts.length);
-
-        questions.push({
-            id: i + 1,
-            element: elementNum,
-            elementName: getElementName(elementNum),
-            text: questionTexts[textIndex],
-            options: [
-                { value: 1, label: 'Very Poor' },
-                { value: 2, label: 'Poor' },
-                { value: 3, label: 'Fair' },
-                { value: 4, label: 'Good' },
-                { value: 5, label: 'Excellent' }
-            ]
-        });
-    }
-}
-
-// ============================================================
-// RENDER QUESTION - FIXED
+// RENDER QUESTION - SUPPORTS MULTIPLE TYPES
 // ============================================================
 function renderQuestion() {
     const q = questions[currentQuestion];
     const area = document.getElementById('questionArea');
     
-    // ✅ Get the saved answer for this question, if any
     const savedAnswer = answers[currentQuestion];
     const t = (key) => getTranslation(key, currentLang);
+
+    // Determine if answer is saved
+    isAnswerSaved = savedAnswer !== null && savedAnswer !== undefined;
+    if (isAnswerSaved) {
+        selectedValue = savedAnswer;
+    }
+
+    // Build section badge
+    const sectionName = q.sectionName || getSectionName(q.sectionId, currentLang);
+    const sectionBadge = q.sectionId ? 
+        `<div class="section-badge"><i class="fas fa-tag"></i> ${sectionName}</div>` : '';
+
+    // Build question text
+    const questionText = q.text || `Question ${currentQuestion + 1}`;
+
+    // Build options based on question type
+    let optionsHtml = '';
+    
+    if (q.type === 'text') {
+        // Text input for Q20
+        const placeholder = q.placeholder || (t('type_your_response') || 'Type your response here...');
+        const textValue = isAnswerSaved ? savedAnswer : '';
+        optionsHtml = `
+            <div class="text-input-wrapper">
+                <textarea id="textAnswerInput" class="text-answer-input" 
+                    placeholder="${placeholder}" 
+                    rows="4"
+                    oninput="handleTextInput(this.value)">${textValue}</textarea>
+                <div class="text-char-count" id="charCount">${textValue.length} characters</div>
+            </div>
+        `;
+    } else if (q.type === 'yesno') {
+        // Yes/No options for Q1
+        optionsHtml = q.options.map(opt => `
+            <div class="option ${savedAnswer === opt.value ? 'selected' : ''}" 
+                 data-value="${opt.value}"
+                 onclick="selectOption(${opt.value})">
+                <div class="radio">${savedAnswer === opt.value ? '✓' : ''}</div>
+                <span class="label">${opt.label}</span>
+            </div>
+        `).join('');
+    } else {
+        // Likert scale (5-point) for Q2-Q19
+        optionsHtml = q.options.map(opt => `
+            <div class="option ${savedAnswer === opt.value ? 'selected' : ''}" 
+                 data-value="${opt.value}"
+                 onclick="selectOption(${opt.value})">
+                <div class="radio">${savedAnswer === opt.value ? '✓' : ''}</div>
+                <span class="label">${opt.label}</span>
+            </div>
+        `).join('');
+    }
+
+    // Build feedback and pending indicators
+    const pendingHtml = selectedValue !== null && !isAnswerSaved && q.type !== 'text' ?
+        `<div class="selection-pending show" id="pendingIndicator">
+            <i class="fas fa-info-circle"></i>
+            <span>${t('selection_pending') || 'Selection pending. Click "Next" to save your answer.'}</span>
+        </div>` :
+        `<div class="selection-pending" id="pendingIndicator"></div>`;
+
+    const feedbackHtml = isAnswerSaved && q.type !== 'text' ?
+        `<div class="selection-feedback show success" id="feedback">
+            <i class="fas fa-check-circle"></i>
+            <span>${t('answer_saved') || 'Answer saved!'}</span>
+        </div>` :
+        `<div class="selection-feedback" id="feedback"></div>`;
 
     area.innerHTML = `
         <div class="question-card">
@@ -289,30 +392,26 @@ function renderQuestion() {
                 <i class="fas fa-question-circle"></i> 
                 ${t('question') || 'Question'} ${currentQuestion + 1} ${t('of') || 'of'} ${QUESTIONS_PER_SESSION}
             </div>
-            <div class="element-tag">
-                <i class="fas fa-tag"></i> ${t('sms_element') || 'SMS Element'} ${q.element}: ${q.elementName}
-            </div>
-            <div class="question-text">${q.text}</div>
+            ${sectionBadge}
+            <div class="question-text">${questionText}</div>
             <div class="options" id="optionsContainer">
-                ${q.options.map(opt => `
-                    <div class="option ${savedAnswer === opt.value ? 'selected' : ''}" 
-                         data-value="${opt.value}"
-                         onclick="selectOption(${opt.value})">
-                        <div class="radio">${savedAnswer === opt.value ? '✓' : ''}</div>
-                        <span class="label">${t(opt.label.toLowerCase().replace(' ', '_')) || opt.label}</span>
-                    </div>
-                `).join('')}
+                ${optionsHtml}
             </div>
-            <div class="selection-pending ${selectedValue !== null && !isAnswerSaved ? 'show' : ''}" id="pendingIndicator">
-                <i class="fas fa-info-circle"></i>
-                <span>${t('selection_pending') || 'Selection pending. Click "Next" to save your answer.'}</span>
-            </div>
-            <div class="selection-feedback ${isAnswerSaved ? 'show success' : ''}" id="feedback">
-                <i class="fas fa-check-circle"></i>
-                <span>${isAnswerSaved ? (t('answer_saved') || 'Answer saved!') : ''}</span>
-            </div>
+            ${pendingHtml}
+            ${feedbackHtml}
         </div>
     `;
+
+    // If text question, set up character counter
+    if (q.type === 'text') {
+        const textarea = document.getElementById('textAnswerInput');
+        if (textarea) {
+            textarea.addEventListener('input', function() {
+                const count = this.value.length;
+                document.getElementById('charCount').textContent = `${count} characters`;
+            });
+        }
+    }
 
     updateTranslations();
     updateNavButtons();
@@ -353,15 +452,14 @@ function selectOption(value) {
     // Show pending indicator
     const pending = document.getElementById('pendingIndicator');
     if (pending) {
-        pending.classList.add('show');
         const t = (key) => getTranslation(key, currentLang);
+        pending.className = 'selection-pending show';
         pending.innerHTML = `<i class="fas fa-info-circle"></i> <span>${t('selection_pending') || 'Selection pending. Click "Next" to save your answer.'}</span>`;
     }
 
     // Hide feedback
     const feedback = document.getElementById('feedback');
     if (feedback) {
-        feedback.classList.remove('show');
         feedback.className = 'selection-feedback';
         feedback.innerHTML = '';
     }
@@ -370,17 +468,50 @@ function selectOption(value) {
 }
 
 // ============================================================
-// SAVE CURRENT ANSWER
+// TEXT INPUT HANDLER
+// ============================================================
+function handleTextInput(value) {
+    textAnswer = value;
+    // Auto-save text answers (unlike option questions)
+    if (value.trim() !== '') {
+        answers[currentQuestion] = value;
+        isAnswerSaved = true;
+        answeredCount = answers.filter(a => a !== null && a !== undefined && a !== '').length;
+        localStorage.setItem(`sms_${tenantId}_session_${sessionNumber}_answers`, JSON.stringify(answers));
+        updateProgress();
+        updateAnsweredCount();
+        updateNavButtons();
+        
+        // Show feedback for text
+        const feedback = document.getElementById('feedback');
+        if (feedback) {
+            const t = (key) => getTranslation(key, currentLang);
+            feedback.className = 'selection-feedback show success';
+            feedback.innerHTML = `<i class="fas fa-check-circle"></i> <span>${t('answer_saved') || 'Answer saved!'}</span>`;
+        }
+    } else {
+        // If empty, clear the answer
+        answers[currentQuestion] = null;
+        isAnswerSaved = false;
+        answeredCount = answers.filter(a => a !== null && a !== undefined && a !== '').length;
+        localStorage.setItem(`sms_${tenantId}_session_${sessionNumber}_answers`, JSON.stringify(answers));
+        updateProgress();
+        updateAnsweredCount();
+        updateNavButtons();
+    }
+}
+
+// ============================================================
+// SAVE CURRENT ANSWER (for non-text questions)
 // ============================================================
 function saveCurrentAnswer() {
     if (selectedValue === null || selectedValue === undefined) {
         return false;
     }
 
-    // ✅ Only save if the answer has changed
+    // Only save if changed
     if (answers[currentQuestion] !== selectedValue) {
         answers[currentQuestion] = selectedValue;
-        // ✅ Update answered count
         answeredCount = answers.filter(a => a !== null && a !== undefined).length;
     }
     
@@ -400,7 +531,8 @@ function saveCurrentAnswer() {
     // Hide pending
     const pending = document.getElementById('pendingIndicator');
     if (pending) {
-        pending.classList.remove('show');
+        pending.className = 'selection-pending';
+        pending.innerHTML = '';
     }
 
     console.log(`✅ Answer saved for Q${currentQuestion + 1}:`, selectedValue);
@@ -417,19 +549,35 @@ function saveCurrentAnswer() {
 // NAVIGATION
 // ============================================================
 function nextQuestion() {
-    if (selectedValue === null || selectedValue === undefined) {
-        const t = (key) => getTranslation(key, currentLang);
-        alert(t('select_option') || 'Please select an answer before proceeding.');
-        return;
+    const q = questions[currentQuestion];
+    
+    // Handle text question separately
+    if (q.type === 'text') {
+        const textarea = document.getElementById('textAnswerInput');
+        if (textarea) {
+            handleTextInput(textarea.value);
+        }
+    } else {
+        // Handle option questions
+        if (selectedValue === null || selectedValue === undefined) {
+            const t = (key) => getTranslation(key, currentLang);
+            alert(t('select_option') || 'Please select an answer before proceeding.');
+            return;
+        }
+        saveCurrentAnswer();
     }
-
-    saveCurrentAnswer();
 
     if (currentQuestion < QUESTIONS_PER_SESSION - 1) {
         currentQuestion++;
-        // ✅ Load the saved answer for the next question
-        selectedValue = answers[currentQuestion] !== null && answers[currentQuestion] !== undefined ? answers[currentQuestion] : null;
-        isAnswerSaved = selectedValue !== null;
+        // Load the saved answer for the next question
+        const nextAnswer = answers[currentQuestion];
+        if (nextAnswer !== null && nextAnswer !== undefined) {
+            selectedValue = nextAnswer;
+            isAnswerSaved = true;
+        } else {
+            selectedValue = null;
+            isAnswerSaved = false;
+        }
         renderQuestion();
         updateProgress();
         updateNavButtons();
@@ -442,15 +590,27 @@ function nextQuestion() {
 
 function prevQuestion() {
     if (currentQuestion > 0) {
-        // ✅ Save current answer if selected but not saved
-        if (selectedValue !== null && !isAnswerSaved) {
+        const q = questions[currentQuestion];
+        // Save current if needed
+        if (q.type === 'text') {
+            const textarea = document.getElementById('textAnswerInput');
+            if (textarea) {
+                handleTextInput(textarea.value);
+            }
+        } else if (selectedValue !== null && !isAnswerSaved) {
             saveCurrentAnswer();
         }
 
         currentQuestion--;
-        // ✅ Load the saved answer for the previous question
-        selectedValue = answers[currentQuestion] !== null && answers[currentQuestion] !== undefined ? answers[currentQuestion] : null;
-        isAnswerSaved = selectedValue !== null;
+        // Load the saved answer for the previous question
+        const prevAnswer = answers[currentQuestion];
+        if (prevAnswer !== null && prevAnswer !== undefined) {
+            selectedValue = prevAnswer;
+            isAnswerSaved = true;
+        } else {
+            selectedValue = null;
+            isAnswerSaved = false;
+        }
         renderQuestion();
         updateProgress();
         updateNavButtons();
@@ -460,15 +620,26 @@ function prevQuestion() {
 }
 
 function updateNavButtons() {
+    const q = questions[currentQuestion];
     document.getElementById('prevBtn').disabled = currentQuestion === 0;
 
     const nextBtn = document.getElementById('nextBtn');
-    // ✅ Only disable if no selection
-    nextBtn.disabled = selectedValue === null || selectedValue === undefined;
+    
+    if (q && q.type === 'text') {
+        // For text questions, enable next if there's text
+        const textarea = document.getElementById('textAnswerInput');
+        if (textarea) {
+            nextBtn.disabled = textarea.value.trim() === '';
+        } else {
+            nextBtn.disabled = true;
+        }
+    } else {
+        // For option questions, require selection
+        nextBtn.disabled = selectedValue === null || selectedValue === undefined;
+    }
 }
 
 function updateProgress() {
-    // ✅ Use answeredCount for accurate progress
     const progress = Math.round((answeredCount / QUESTIONS_PER_SESSION) * 100);
 
     document.getElementById('progressFill').style.width = progress + '%';
@@ -478,7 +649,6 @@ function updateProgress() {
 
 function updateAnsweredCount() {
     const t = (key) => getTranslation(key, currentLang);
-    // ✅ Show accurate answered count
     document.getElementById('answeredCount').textContent = `${answeredCount} ${t('of') || 'of'} ${QUESTIONS_PER_SESSION} ${t('answered') || 'answered'}`;
 }
 
@@ -486,18 +656,25 @@ function updateAnsweredCount() {
 // COMPLETE SURVEY
 // ============================================================
 function completeSurvey() {
-    // ✅ Save current answer if any
-    if (selectedValue !== null && !isAnswerSaved) {
+    const q = questions[currentQuestion];
+    
+    // Save current answer if needed
+    if (q.type === 'text') {
+        const textarea = document.getElementById('textAnswerInput');
+        if (textarea) {
+            handleTextInput(textarea.value);
+        }
+    } else if (selectedValue !== null && !isAnswerSaved) {
         saveCurrentAnswer();
     }
 
-    // ✅ Check if all questions are answered
-    const unanswered = answers.filter(a => a === null || a === undefined);
+    // Check if all questions are answered
+    const unanswered = answers.filter(a => a === null || a === undefined || a === '');
     if (unanswered.length > 0) {
         const t = (key) => getTranslation(key, currentLang);
         alert(`${t('please_answer_all') || 'Please answer all questions before completing the survey.'} (${unanswered.length} ${t('remaining') || 'remaining'})`);
         // Jump to first unanswered
-        const firstUnanswered = answers.findIndex(a => a === null || a === undefined);
+        const firstUnanswered = answers.findIndex(a => a === null || a === undefined || a === '');
         if (firstUnanswered !== -1) {
             currentQuestion = firstUnanswered;
             selectedValue = null;
@@ -591,16 +768,19 @@ window.__survey = {
     questions,
     renderQuestion,
     selectOption,
+    handleTextInput,
     saveCurrentAnswer,
     nextQuestion,
     prevQuestion,
     completeSurvey,
     exitSurvey,
     toggleLanguage,
-    getLocalizedPurpose
+    getLocalizedPurpose,
+    loadQuestions
 };
 
-console.log(`📝 Survey ready - Session ${sessionNumber}`);
+console.log(`📝 Survey ready - Session ${sessionNumber} (v2.0.0)`);
 console.log(`✈️ Airline: ${airlineName}`);
 console.log(`📊 ${answeredCount} of ${QUESTIONS_PER_SESSION} answered`);
 console.log('💡 Select an option → Click "Next" to save');
+console.log('📝 Question 20 is an open-ended text question');

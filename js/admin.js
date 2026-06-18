@@ -1,8 +1,8 @@
 /*
 ================================================================================
 FILE: SurveySMS/js/admin.js
-VERSION: 1.2.0
-REVISION DATE: 2026-06-17
+VERSION: 1.2.4
+REVISION DATE: 2026-06-18
 PURPOSE: Admin panel logic - authentication, data management, airline-specific dummy data
 DEPENDENCIES: credentials.js, translations.js, auth.js, storage.js
 USAGE: admin.html
@@ -18,25 +18,489 @@ let currentLang = 'en';
 let ADMIN_EMAIL = 'admin@surveysms.com';
 
 // ============================================================
+// GET AIRLINES FROM CREDENTIALS (WITH RETRY)
+// ============================================================
+function getAirlinesFromCredentials(retryCount = 0) {
+    const airlines = [];
+    const seen = new Set();
+    
+    console.log(`🔍 getAirlinesFromCredentials() called (attempt ${retryCount + 1})`);
+    
+    let credentials = null;
+    
+    if (typeof window !== 'undefined' && window.CREDENTIALS) {
+        credentials = window.CREDENTIALS;
+        console.log('✅ Found window.CREDENTIALS');
+    }
+    
+    if (!credentials && typeof CREDENTIALS !== 'undefined') {
+        credentials = CREDENTIALS;
+        console.log('✅ Found CREDENTIALS global');
+    }
+    
+    if (!credentials) {
+        console.warn('⚠️ No credentials found!');
+        if (retryCount < 3) {
+            console.log(`⏳ Waiting 500ms and retrying... (${retryCount + 1}/3)`);
+            return null;
+        }
+        console.warn('⚠️ Using fallback airlines after 3 retries');
+        const fallbackAirlines = [
+            { name: 'Sita Air', tenantId: 'sita-air' },
+            { name: 'Tara Air', tenantId: 'tara-air' },
+            { name: 'Summit Air', tenantId: 'summit-air' },
+            { name: 'Buddha Air', tenantId: 'buddha-air' },
+            { name: 'Yeti Airlines', tenantId: 'yeti-airlines' },
+            { name: 'Shree Airlines', tenantId: 'shree-airlines' },
+            { name: 'Danfe Air', tenantId: 'danfe-air' }
+        ];
+        fallbackAirlines.forEach(a => {
+            airlines.push({ ...a, hasParticipant: true, hasSafetyOfficer: true });
+        });
+        return airlines;
+    }
+    
+    console.log(`📊 Processing ${Object.keys(credentials).length} credential entries`);
+    
+    for (const [email, userData] of Object.entries(credentials)) {
+        if (userData.role === 'caan' || userData.role === 'admin') {
+            console.log(`⏭️ Skipping ${userData.role}: ${email}`);
+            continue;
+        }
+        if (userData.airline && !seen.has(userData.airline)) {
+            seen.add(userData.airline);
+            airlines.push({
+                name: userData.airline,
+                tenantId: userData.tenantId,
+                hasParticipant: false,
+                hasSafetyOfficer: false
+            });
+            console.log(`✈️ Added airline: ${userData.airline}`);
+        }
+    }
+    
+    for (const airline of airlines) {
+        airline.hasParticipant = Object.values(credentials).some(
+            u => u.airline === airline.name && u.role === 'participant'
+        );
+        airline.hasSafetyOfficer = Object.values(credentials).some(
+            u => u.airline === airline.name && u.role === 'safety_officer'
+        );
+    }
+    
+    console.log(`✅ getAirlinesFromCredentials returned ${airlines.length} airlines`);
+    return airlines;
+}
+
+// ============================================================
+// GET SESSION COUNT FROM INPUT
+// ============================================================
+function getSessionCount() {
+    const input = document.getElementById('sessionCount');
+    if (!input) return 5;
+    let count = parseInt(input.value) || 5;
+    if (count < 1) count = 1;
+    if (count > 10) count = 10;
+    return count;
+}
+
+// ============================================================
+// UPDATE SESSION COUNT DISPLAY
+// ============================================================
+function updateSessionCountDisplay() {
+    const count = getSessionCount();
+    const display = document.getElementById('sessionCountDisplay');
+    if (display) display.textContent = count;
+}
+
+// ============================================================
+// RENDER AIRLINES
+// ============================================================
+function renderAirlines() {
+    const container = document.getElementById('airlinesList');
+    const title = document.getElementById('airlinesTitle');
+    
+    let airlines = getAirlinesFromCredentials(0);
+    
+    if (airlines === null) {
+        console.log('⏳ Delaying renderAirlines for credentials to load...');
+        setTimeout(function() { renderAirlines(); }, 500);
+        return;
+    }
+    
+    const count = airlines.length;
+    if (title) title.textContent = `SAAS Provided To: (${count})`;
+    
+    if (airlines.length === 0) {
+        if (container) container.innerHTML = `<span class="airline-tag">No airlines configured</span>`;
+        return;
+    }
+    
+    if (container) {
+        container.innerHTML = airlines.map(airline =>
+            `<span class="airline-tag">
+                <i class="fas fa-plane"></i> ${airline.name}
+                ${airline.hasParticipant ? '<span class="badge-participant">👤</span>' : ''}
+                ${airline.hasSafetyOfficer ? '<span class="badge-officer">🛡️</span>' : ''}
+            </span>`
+        ).join('');
+    }
+    
+    console.log(`✅ Rendered ${airlines.length} airlines from credentials`);
+}
+
+// ============================================================
+// POPULATE AIRLINE SELECTOR
+// ============================================================
+function populateAirlineSelector() {
+    const select = document.getElementById('airlineSelector');
+    if (!select) {
+        console.warn('⚠️ Airline selector element not found');
+        return;
+    }
+    
+    console.log('🔍 Populating airline selector...');
+    
+    while (select.options.length > 0) { select.remove(0); }
+    
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = '✈️ All Airlines';
+    select.appendChild(allOption);
+    
+    let airlines = getAirlinesFromCredentials(0);
+    
+    if (airlines === null) {
+        console.log('⏳ Delaying populateAirlineSelector for credentials to load...');
+        setTimeout(function() { populateAirlineSelector(); }, 500);
+        return;
+    }
+    
+    console.log(`📊 Found ${airlines.length} airlines for selector`);
+    
+    airlines.forEach(airline => {
+        const option = document.createElement('option');
+        option.value = airline.tenantId || airline.name.toLowerCase().replace(/ /g, '-');
+        option.textContent = `✈️ ${airline.name}`;
+        select.appendChild(option);
+        console.log(`  ➕ Added: ${airline.name}`);
+    });
+    
+    const badge = document.getElementById('airlineCountBadge');
+    if (badge) badge.textContent = airlines.length;
+    
+    console.log(`✅ Populated airline selector with ${airlines.length + 1} options`);
+}
+
+// ============================================================
+// GENERATE DUMMY RESPONSES
+// ============================================================
+function generateDummyResponses(sessionCount = 5) {
+    const results = {
+        airlines: [],
+        totalSessions: 0,
+        summary: ''
+    };
+
+    let airlines = getAirlinesFromCredentials(0);
+    if (airlines === null) {
+        airlines = [
+            { name: 'Sita Air', tenantId: 'sita-air' },
+            { name: 'Tara Air', tenantId: 'tara-air' },
+            { name: 'Summit Air', tenantId: 'summit-air' },
+            { name: 'Buddha Air', tenantId: 'buddha-air' },
+            { name: 'Yeti Airlines', tenantId: 'yeti-airlines' },
+            { name: 'Shree Airlines', tenantId: 'shree-airlines' },
+            { name: 'Danfe Air', tenantId: 'danfe-air' }
+        ];
+    }
+
+    const tenantMap = {
+        'Sita Air': 'sita-air',
+        'Tara Air': 'tara-air',
+        'Summit Air': 'summit-air',
+        'Buddha Air': 'buddha-air',
+        'Yeti Airlines': 'yeti-airlines',
+        'Shree Airlines': 'shree-airlines',
+        'Danfe Air': 'danfe-air'
+    };
+
+    airlines.forEach((airline) => {
+        const tenantId = tenantMap[airline.name] || airline.name.toLowerCase().replace(/ /g, '-');
+        const sessions = generateSessionsForAirline(airline.name, tenantId, 1, sessionCount);
+        results.airlines.push({
+            name: airline.name,
+            tenantId: tenantId,
+            sessions: sessions
+        });
+        results.totalSessions += sessions;
+    });
+
+    results.summary = `
+        Generated <strong>${sessionCount}</strong> session(s) for <strong>${airlines.length}</strong> airlines<br>
+        Total sessions created: <strong>${results.totalSessions}</strong>
+    `;
+
+    return results;
+}
+
+// ============================================================
+// GENERATE SESSIONS FOR A SPECIFIC AIRLINE
+// ============================================================
+function generateSessionsForAirline(airline, tenantId, seed, sessionCount = 5) {
+    let sessionsCreated = 0;
+    
+    const existingCompleted = parseInt(localStorage.getItem(`sms_${tenantId}_completed_sessions`) || '0');
+    let nextSession = existingCompleted + 1;
+    
+    for (let i = 0; i < sessionCount; i++) {
+        const sessionNum = nextSession + i;
+        const answers = generateSessionAnswers(seed + i);
+
+        const key = `sms_${tenantId}_session_${sessionNum}_answers`;
+        localStorage.setItem(key, JSON.stringify(answers));
+        localStorage.setItem(`sms_${tenantId}_session_${sessionNum}_completed`, 'true');
+
+        sessionsCreated++;
+    }
+
+    const totalCompleted = existingCompleted + sessionCount;
+    localStorage.setItem(`sms_${tenantId}_completed_sessions`, totalCompleted.toString());
+    localStorage.setItem(`sms_${tenantId}_current_session`, totalCompleted.toString());
+
+    const airlineData = {
+        name: airline,
+        tenantId: tenantId,
+        sessionsCompleted: totalCompleted,
+        totalSessions: totalCompleted,
+        generatedAt: new Date().toISOString()
+    };
+    localStorage.setItem(`sms_${tenantId}_airline_data`, JSON.stringify(airlineData));
+
+    let email = `demo@${tenantId}.com`;
+    if (typeof window !== 'undefined' && window.CREDENTIALS) {
+        for (const [e, u] of Object.entries(window.CREDENTIALS)) {
+            if (u.airline === airline && u.role === 'participant') {
+                email = e;
+                break;
+            }
+        }
+    }
+
+    const userData = {
+        email: email,
+        name: `${airline} Demo User`,
+        role: 'airline',
+        airline: airline,
+        tenantId: tenantId,
+        picture: `https://ui-avatars.com/api/?name=${airline.replace(' ', '+')}&background=0a2e4a&color=fff&size=128`,
+        completedSessions: totalCompleted,
+        currentSession: totalCompleted,
+        lastLogin: new Date().toISOString(),
+        isDemo: true
+    };
+    localStorage.setItem(`sms_${tenantId}_user_data`, JSON.stringify(userData));
+
+    console.log(`✅ Generated ${sessionCount} sessions for ${airline} (${tenantId}) - Total: ${totalCompleted}`);
+    return sessionsCreated;
+}
+
+function generateSessionAnswers(seed) {
+    const answers = [];
+    const questionsPerSession = 24;
+
+    let seedValue = seed * 1234567;
+
+    for (let i = 0; i < questionsPerSession; i++) {
+        const baseScore = (seedValue % 4) + 1;
+        const variation = Math.floor((seedValue * 7 + i * 3) % 3);
+        let score = Math.min(5, baseScore + variation);
+
+        if (seed % 2 === 0) {
+            score = Math.min(5, score + 1);
+        }
+
+        answers.push(score);
+
+        seedValue = (seedValue * 9301 + 49297) % 233280;
+    }
+
+    return answers;
+}
+
+// ============================================================
+// GENERATE DUMMY DATA FOR SPECIFIC AIRLINE
+// ============================================================
+function generateDummyDataForAirline() {
+    const select = document.getElementById('airlineSelector');
+    const tenantId = select.value;
+    const sessionCount = getSessionCount();
+    const t = (key) => getTranslation(key, currentLang);
+
+    let airlineName = 'All Airlines';
+    if (tenantId !== 'all') {
+        const option = select.options[select.selectedIndex];
+        airlineName = option.textContent.replace('✈️ ', '').replace('🏛️ ', '');
+    }
+
+    // ✅ Warning about existing data
+    const existingData = getDataStats();
+    let warningMsg = '';
+    if (existingData.totalSessions > 0) {
+        warningMsg = `\n\n⚠️ WARNING: There are already ${existingData.totalSessions} sessions in the system.\nGenerating will ADD to existing data.\n\n`;
+    }
+
+    if (!confirm(`This will generate ${sessionCount} dummy session(s) for:\n\n📊 ${airlineName}${warningMsg}\n\nExisting data will be preserved.\n\nContinue?`)) {
+        return;
+    }
+
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner"></span> Generating ${sessionCount} session(s)...`;
+    btn.disabled = true;
+
+    setTimeout(() => {
+        try {
+            let results;
+            if (tenantId === 'all') {
+                results = generateDummyResponses(sessionCount);
+            } else {
+                results = generateDummyResponsesForTenant(tenantId, sessionCount);
+            }
+
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+
+            showStatus('success', `
+                <i class="fas fa-check-circle"></i>
+                <strong>✅ Dummy data generated successfully!</strong><br>
+                ${results.summary}
+            `);
+
+            console.log('✅ Dummy data generated:', results);
+            renderAirlines();
+            populateAirlineSelector();
+        } catch (error) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            console.error('❌ Error generating dummy data:', error);
+            showStatus('error', t('generate_error') || '❌ Error generating dummy data: ' + error.message);
+        }
+    }, 200);
+}
+
+function generateDummyResponsesForTenant(tenantId, sessionCount = 5) {
+    const results = {
+        airlines: [],
+        totalSessions: 0,
+        summary: ''
+    };
+
+    let airlineName = tenantId;
+    let airlines = getAirlinesFromCredentials(0);
+    if (airlines === null) {
+        airlines = [
+            { name: 'Sita Air', tenantId: 'sita-air' },
+            { name: 'Tara Air', tenantId: 'tara-air' },
+            { name: 'Summit Air', tenantId: 'summit-air' },
+            { name: 'Buddha Air', tenantId: 'buddha-air' },
+            { name: 'Yeti Airlines', tenantId: 'yeti-airlines' },
+            { name: 'Shree Airlines', tenantId: 'shree-airlines' },
+            { name: 'Danfe Air', tenantId: 'danfe-air' }
+        ];
+    }
+    const found = airlines.find(a => a.tenantId === tenantId);
+    if (found) airlineName = found.name;
+
+    const sessions = generateSessionsForAirline(airlineName, tenantId, 1, sessionCount);
+    results.airlines.push({
+        name: airlineName,
+        tenantId: tenantId,
+        sessions: sessions
+    });
+    results.totalSessions += sessions;
+
+    results.summary = `
+        Generated <strong>${sessionCount}</strong> session(s) for <strong>${airlineName}</strong><br>
+        Total sessions: <strong>${sessions}</strong>
+    `;
+
+    return results;
+}
+
+// ============================================================
+// WIPE DATA FOR SPECIFIC AIRLINE
+// ============================================================
+function wipeDataForAirline() {
+    const select = document.getElementById('airlineSelector');
+    const tenantId = select.value;
+
+    let airlineName = 'All Airlines';
+    let isAll = tenantId === 'all';
+    if (!isAll) {
+        const option = select.options[select.selectedIndex];
+        airlineName = option.textContent.replace('✈️ ', '').replace('🏛️ ', '');
+    }
+
+    let keysToDelete = [];
+    const allKeys = Object.keys(localStorage);
+    
+    if (isAll) {
+        keysToDelete = allKeys.filter(k => k.startsWith('sms_'));
+    } else {
+        keysToDelete = allKeys.filter(k => k.startsWith(`sms_${tenantId}_`) || (k.includes(`session_`) && k.includes(tenantId)));
+    }
+    
+    const confirmMsg = isAll
+        ? `⚠️ WARNING: This will delete ALL survey data for ALL airlines!\n\n${keysToDelete.length} keys will be removed.\n\nAre you sure?`
+        : `⚠️ WARNING: This will delete ALL survey data for:\n\n📊 ${airlineName}\n\n${keysToDelete.length} keys will be removed.\n\nAre you sure?`;
+
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+
+    if (!confirm('🔴 LAST CHANCE: All data will be lost forever. Continue?')) {
+        return;
+    }
+
+    try {
+        let count = 0;
+        keysToDelete.forEach(key => {
+            localStorage.removeItem(key);
+            count++;
+        });
+
+        console.log(`✅ Wiped ${count} items from localStorage for: ${airlineName}`);
+        showStatus('success', `
+            <i class="fas fa-check-circle"></i>
+            <strong>✅ Successfully wiped ${count} data items for ${airlineName}!</strong>
+        `);
+
+        renderAirlines();
+        populateAirlineSelector();
+    } catch (error) {
+        console.error('❌ Error wiping data:', error);
+        showStatus('error', '❌ Error wiping data: ' + error.message);
+    }
+}
+
+// ============================================================
 // INITIALIZATION
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔐 Admin Panel Loaded');
 
-    // Get language from localStorage
     currentLang = localStorage.getItem('sms_lang') || 'en';
 
-    // Get airlines from credentials module
-    renderAirlines();
+    setTimeout(function() {
+        renderAirlines();
+        populateAirlineSelector();
+        updateSessionCountDisplay();
+    }, 300);
 
-    // Populate airline selector
-    populateAirlineSelector();
-
-    // Update language
     updateLanguageToggle();
     updateTranslations();
 
-    // Check if already logged in using auth module
     if (typeof isLoggedIn === 'function') {
         if (isLoggedIn()) {
             const userData = getCurrentUser();
@@ -47,7 +511,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     } else {
-        // Fallback to localStorage check
         const userData = JSON.parse(localStorage.getItem('sms_user_data') || '{}');
         if (userData.email === ADMIN_EMAIL) {
             document.getElementById('loginSection').style.display = 'none';
@@ -82,17 +545,14 @@ function updateTranslations() {
 
     document.title = t('admin_title') || 'Admin Panel - SurveySMS';
 
-    // Header
     document.getElementById('adminTitle').textContent = t('admin_panel') || 'Admin Panel';
     document.getElementById('adminSubtitle').textContent = t('admin_subtitle') || 'Manage survey data and generate dummy responses';
     document.getElementById('adminBadge').textContent = t('restricted') || 'RESTRICTED';
 
-    // Login
     document.getElementById('loginLabel').textContent = t('admin_password') || 'Admin Password';
     document.getElementById('loginPlaceholder').placeholder = t('enter_password') || 'Enter admin password';
     document.getElementById('loginBtnText').textContent = t('login') || 'Login';
 
-    // Actions
     document.getElementById('actionWipeTitle').textContent = t('wipe_title') || 'Wipe All Survey Data';
     document.getElementById('actionWipeDesc').textContent = t('wipe_desc') || 'Completely remove all survey responses, sessions, and user data from localStorage.';
     document.getElementById('actionWipeBtn').textContent = t('wipe_btn') || 'Wipe All Data';
@@ -109,14 +569,11 @@ function updateTranslations() {
     document.getElementById('actionResetDesc').textContent = t('reset_desc') || 'Reset the demo user account to start fresh with a new session.';
     document.getElementById('actionResetBtn').textContent = t('reset_btn') || 'Reset Demo User';
 
-    // Airlines section
     document.getElementById('airlinesTitle').textContent = t('available_airlines') || 'SAAS Provided To:';
 
-    // Footer
     document.getElementById('footerText').textContent = t('admin_footer') || 'SurveySMS Admin Panel';
     document.getElementById('footerBack').textContent = t('back_dashboard') || 'Back to Dashboard';
 
-    // Status messages
     document.getElementById('statusLoginSuccess').textContent = t('login_success') || '✅ Login successful! Welcome to the Admin Panel.';
     document.getElementById('statusWipeSuccess').textContent = t('wipe_success') || '✅ Successfully wiped {count} data items from localStorage.';
     document.getElementById('statusGenerateSuccess').textContent = t('generate_success') || '✅ Dummy data generated successfully!';
@@ -134,12 +591,10 @@ function handleLogin(event) {
     const errorEl = document.getElementById('loginError');
     const t = (key) => getTranslation(key, currentLang);
 
-    // Use centralized credential validation
     if (typeof validateCredentials === 'function') {
         const user = validateCredentials(email, password);
         
         if (user && user.role === 'admin') {
-            // Use auth module to set session
             if (typeof login === 'function') {
                 login(email, password).then(result => {
                     if (result.success) {
@@ -153,7 +608,6 @@ function handleLogin(event) {
                     }
                 });
             } else {
-                // Fallback
                 const userData = {
                     email: email,
                     name: user.displayName,
@@ -179,269 +633,10 @@ function handleLogin(event) {
         }
     }
 
-    // Login failed
     errorEl.textContent = t('invalid_password') || 'Invalid credentials. Please try again.';
     errorEl.classList.add('show');
     console.log('❌ Admin login failed');
     return false;
-}
-
-// ============================================================
-// RENDER AIRLINES
-// ============================================================
-function renderAirlines() {
-    const container = document.getElementById('airlinesList');
-    const title = document.getElementById('airlinesTitle');
-    
-    if (typeof getAirlines === 'function') {
-        const airlines = getAirlines();
-        const count = airlines.length;
-        title.textContent = `SAAS Provided To: (${count})`;
-        document.getElementById('tenantCount').textContent = `(${count})`;
-        
-        container.innerHTML = airlines.map(airline =>
-            `<span class="airline-tag">
-                <i class="fas fa-plane"></i> ${airline.name}
-                ${airline.hasParticipant ? '<span class="badge-participant">👤</span>' : ''}
-                ${airline.hasSafetyOfficer ? '<span class="badge-officer">🛡️</span>' : ''}
-            </span>`
-        ).join('');
-        console.log(`✅ Rendered ${airlines.length} airlines from credentials`);
-    } else {
-        // Fallback
-        const airlines = [
-            'Sita Air', 'Tara Air', 'Summit Air', 'Buddha Air',
-            'Yeti Airlines', 'Shree Airlines', 'Danfe Air'
-        ];
-        title.textContent = `SAAS Provided To: (${airlines.length})`;
-        document.getElementById('tenantCount').textContent = `(${airlines.length})`;
-        container.innerHTML = airlines.map(airline =>
-            `<span class="airline-tag"><i class="fas fa-plane"></i> ${airline}</span>`
-        ).join('');
-        console.warn('⚠️ Credentials module not loaded, using hardcoded airlines');
-    }
-}
-
-// ============================================================
-// AIRLINE SELECTOR
-// ============================================================
-function populateAirlineSelector() {
-    const select = document.getElementById('airlineSelector');
-    if (!select) return;
-
-    // Clear existing options except "All"
-    while (select.options.length > 0) {
-        select.remove(0);
-    }
-
-    // Add "All Airlines" option
-    const allOption = document.createElement('option');
-    allOption.value = 'all';
-    allOption.textContent = '✈️ All Airlines';
-    select.appendChild(allOption);
-
-    // Get airlines from credentials
-    let airlines = [];
-    if (typeof getAirlines === 'function') {
-        airlines = getAirlines();
-    } else {
-        airlines = [
-            { name: 'Sita Air', tenantId: 'sita-air' },
-            { name: 'Tara Air', tenantId: 'tara-air' },
-            { name: 'Summit Air', tenantId: 'summit-air' },
-            { name: 'Buddha Air', tenantId: 'buddha-air' },
-            { name: 'Yeti Airlines', tenantId: 'yeti-airlines' },
-            { name: 'Shree Airlines', tenantId: 'shree-airlines' },
-            { name: 'Danfe Air', tenantId: 'danfe-air' }
-        ];
-    }
-
-    // Add each airline
-    airlines.forEach(airline => {
-        const option = document.createElement('option');
-        option.value = airline.tenantId || airline.name.toLowerCase().replace(/ /g, '-');
-        option.textContent = `✈️ ${airline.name}`;
-        select.appendChild(option);
-    });
-
-    // Add CAAN
-    const caanOption = document.createElement('option');
-    caanOption.value = 'caan';
-    caanOption.textContent = '🏛️ CAAN';
-    select.appendChild(caanOption);
-
-    console.log(`✅ Populated airline selector with ${airlines.length + 2} options`);
-}
-
-// ============================================================
-// GENERATE DUMMY DATA FOR SPECIFIC AIRLINE
-// ============================================================
-function generateDummyDataForAirline() {
-    const select = document.getElementById('airlineSelector');
-    const tenantId = select.value;
-    const t = (key) => getTranslation(key, currentLang);
-
-    // Get airline name for display
-    let airlineName = 'All Airlines';
-    if (tenantId !== 'all') {
-        const option = select.options[select.selectedIndex];
-        airlineName = option.textContent.replace('✈️ ', '').replace('🏛️ ', '');
-    }
-
-    if (!confirm(`This will generate dummy survey responses for:\n\n📊 ${airlineName}\n\nExisting data will be preserved.\n\nContinue?`)) {
-        return;
-    }
-
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = `<span class="spinner"></span> Generating...`;
-    btn.disabled = true;
-
-    setTimeout(() => {
-        try {
-            let results;
-            if (tenantId === 'all') {
-                results = generateDummyResponses();
-            } else {
-                results = generateDummyResponsesForTenant(tenantId);
-            }
-
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-
-            showStatus('success', `
-                <i class="fas fa-check-circle"></i>
-                <strong>✅ Dummy data generated successfully!</strong><br>
-                ${results.summary}
-            `);
-
-            console.log('✅ Dummy data generated:', results);
-            
-            // Refresh stats and airlines list
-            renderAirlines();
-        } catch (error) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            console.error('❌ Error generating dummy data:', error);
-            showStatus('error', t('generate_error') || '❌ Error generating dummy data: ' + error.message);
-        }
-    }, 200);
-}
-
-function generateDummyResponsesForTenant(tenantId) {
-    const results = {
-        airlines: [],
-        totalSessions: 0,
-        summary: ''
-    };
-
-    // Find airline name from tenantId
-    let airlineName = tenantId;
-    let airlines = [];
-    if (typeof getAirlines === 'function') {
-        airlines = getAirlines();
-        const found = airlines.find(a => a.tenantId === tenantId);
-        if (found) airlineName = found.name;
-    } else {
-        const map = {
-            'sita-air': 'Sita Air',
-            'tara-air': 'Tara Air',
-            'summit-air': 'Summit Air',
-            'buddha-air': 'Buddha Air',
-            'yeti-airlines': 'Yeti Airlines',
-            'shree-airlines': 'Shree Airlines',
-            'danfe-air': 'Danfe Air'
-        };
-        airlineName = map[tenantId] || tenantId;
-    }
-
-    // Generate 5 sessions with realistic scores
-    const sessions = generateSessionsForAirline(airlineName, tenantId, 1);
-    results.airlines.push({
-        name: airlineName,
-        tenantId: tenantId,
-        sessions: sessions
-    });
-    results.totalSessions += sessions;
-
-    results.summary = `
-        Generated data for <strong>${airlineName}</strong><br>
-        Total sessions created: <strong>${sessions}</strong><br>
-        All 5 sessions complete (${sessions} total)
-    `;
-
-    return results;
-}
-
-// ============================================================
-// WIPE DATA FOR SPECIFIC AIRLINE
-// ============================================================
-function wipeDataForAirline() {
-    const select = document.getElementById('airlineSelector');
-    const tenantId = select.value;
-    const t = (key) => getTranslation(key, currentLang);
-
-    // Get airline name for display
-    let airlineName = 'All Airlines';
-    let isAll = tenantId === 'all';
-    if (!isAll) {
-        const option = select.options[select.selectedIndex];
-        airlineName = option.textContent.replace('✈️ ', '').replace('🏛️ ', '');
-    }
-
-    const confirmMsg = isAll
-        ? '⚠️ WARNING: This will permanently delete ALL survey data for ALL airlines!\n\nAre you sure you want to continue?'
-        : `⚠️ WARNING: This will permanently delete ALL survey data for:\n\n📊 ${airlineName}\n\nAre you sure you want to continue?`;
-
-    if (!confirm(confirmMsg)) {
-        return;
-    }
-
-    if (!confirm('🔴 LAST CHANCE: All data will be lost forever. Continue?')) {
-        return;
-    }
-
-    try {
-        let count = 0;
-        const keys = Object.keys(localStorage);
-
-        keys.forEach(key => {
-            let shouldDelete = false;
-
-            if (isAll) {
-                // Delete all sms_ keys
-                if (key.startsWith('sms_')) {
-                    shouldDelete = true;
-                }
-            } else {
-                // Delete only keys for specific tenant
-                if (key.startsWith(`sms_${tenantId}_`)) {
-                    shouldDelete = true;
-                }
-                // Also delete session keys that match
-                if (key.includes(`session_`) && key.includes(tenantId)) {
-                    shouldDelete = true;
-                }
-            }
-
-            if (shouldDelete) {
-                localStorage.removeItem(key);
-                count++;
-            }
-        });
-
-        console.log(`✅ Wiped ${count} items from localStorage for: ${airlineName}`);
-        showStatus('success', `
-            <i class="fas fa-check-circle"></i>
-            <strong>✅ Successfully wiped ${count} data items for ${airlineName}!</strong>
-        `);
-
-        // Refresh stats and airlines list
-        renderAirlines();
-    } catch (error) {
-        console.error('❌ Error wiping data:', error);
-        showStatus('error', '❌ Error wiping data: ' + error.message);
-    }
 }
 
 // ============================================================
@@ -493,9 +688,8 @@ function wipeData() {
 
         console.log(`✅ Wiped ${count} items from localStorage`);
         showStatus('success', t('wipe_success').replace('{count}', count));
-        
-        // Refresh airlines list
         renderAirlines();
+        populateAirlineSelector();
     } catch (error) {
         console.error('❌ Error wiping data:', error);
         showStatus('error', t('wipe_error') || '❌ Error wiping data: ' + error.message);
@@ -507,6 +701,13 @@ function wipeData() {
 // ============================================================
 function generateDummyData() {
     const t = (key) => getTranslation(key, currentLang);
+
+    const existingData = getDataStats();
+    if (existingData.totalSessions > 0) {
+        if (!confirm(`⚠️ WARNING: There are already ${existingData.totalSessions} sessions in the system.\n\nGenerating dummy data will ADD to existing data.\n\nThis may cause confusion. Continue?`)) {
+            return;
+        }
+    }
 
     if (!confirm(t('generate_confirm') || 'This will generate dummy survey responses for all airlines.\n\nExisting data will be preserved.\n\nContinue?')) {
         return;
@@ -530,9 +731,8 @@ function generateDummyData() {
             `);
 
             console.log('✅ Dummy data generated:', results);
-            
-            // Refresh airlines list
             renderAirlines();
+            populateAirlineSelector();
         } catch (error) {
             btn.innerHTML = originalText;
             btn.disabled = false;
@@ -540,129 +740,6 @@ function generateDummyData() {
             showStatus('error', t('generate_error') || '❌ Error generating dummy data: ' + error.message);
         }
     }, 200);
-}
-
-function generateDummyResponses() {
-    const results = {
-        airlines: [],
-        totalSessions: 0,
-        summary: ''
-    };
-
-    let airlines;
-    if (typeof getAirlines === 'function') {
-        airlines = getAirlines().map(a => a.name);
-    } else {
-        airlines = [
-            'Sita Air', 'Tara Air', 'Summit Air', 'Buddha Air',
-            'Yeti Airlines', 'Shree Airlines', 'Danfe Air'
-        ];
-    }
-
-    const tenantMap = {
-        'Sita Air': 'sita-air',
-        'Tara Air': 'tara-air',
-        'Summit Air': 'summit-air',
-        'Buddha Air': 'buddha-air',
-        'Yeti Airlines': 'yeti-airlines',
-        'Shree Airlines': 'shree-airlines',
-        'Danfe Air': 'danfe-air'
-    };
-
-    airlines.forEach((airline, index) => {
-        const tenantId = tenantMap[airline] || airline.toLowerCase().replace(/ /g, '-');
-        const sessions = generateSessionsForAirline(airline, tenantId, index);
-        results.airlines.push({
-            name: airline,
-            tenantId: tenantId,
-            sessions: sessions
-        });
-        results.totalSessions += sessions;
-    });
-
-    results.summary = `
-        Generated data for <strong>${airlines.length}</strong> airlines<br>
-        Total sessions created: <strong>${results.totalSessions}</strong><br>
-        Each airline has <strong>5 sessions</strong> (${airlines.length * 5} total)
-    `;
-
-    return results;
-}
-
-function generateSessionsForAirline(airline, tenantId, seed) {
-    let sessionsCreated = 0;
-
-    for (let sessionNum = 1; sessionNum <= 5; sessionNum++) {
-        const answers = generateSessionAnswers(seed + sessionNum);
-
-        const key = `sms_${tenantId}_session_${sessionNum}_answers`;
-        localStorage.setItem(key, JSON.stringify(answers));
-        localStorage.setItem(`sms_${tenantId}_session_${sessionNum}_completed`, 'true');
-
-        sessionsCreated++;
-    }
-
-    localStorage.setItem(`sms_${tenantId}_completed_sessions`, '5');
-    localStorage.setItem(`sms_${tenantId}_current_session`, '0');
-
-    const airlineData = {
-        name: airline,
-        tenantId: tenantId,
-        sessionsCompleted: 5,
-        totalSessions: 5,
-        generatedAt: new Date().toISOString()
-    };
-    localStorage.setItem(`sms_${tenantId}_airline_data`, JSON.stringify(airlineData));
-
-    let email = `demo@${tenantId}.com`;
-    if (typeof window !== 'undefined' && window.CREDENTIALS) {
-        for (const [e, u] of Object.entries(window.CREDENTIALS)) {
-            if (u.airline === airline && u.role === 'participant') {
-                email = e;
-                break;
-            }
-        }
-    }
-
-    const userData = {
-        email: email,
-        name: `${airline} Demo User`,
-        role: 'airline',
-        airline: airline,
-        tenantId: tenantId,
-        picture: `https://ui-avatars.com/api/?name=${airline.replace(' ', '+')}&background=0a2e4a&color=fff&size=128`,
-        completedSessions: 5,
-        currentSession: 0,
-        lastLogin: new Date().toISOString(),
-        isDemo: true
-    };
-    localStorage.setItem(`sms_${tenantId}_user_data`, JSON.stringify(userData));
-
-    console.log(`✅ Generated data for ${airline} (${tenantId})`);
-    return sessionsCreated;
-}
-
-function generateSessionAnswers(seed) {
-    const answers = [];
-    const questionsPerSession = 24;
-
-    let seedValue = seed * 1234567;
-
-    for (let i = 0; i < questionsPerSession; i++) {
-        const baseScore = (seedValue % 4) + 1;
-        const variation = Math.floor((seedValue * 7 + i * 3) % 3);
-        let score = Math.min(5, baseScore + variation);
-
-        if (seed % 2 === 0) {
-            score = Math.min(5, score + 1);
-        }
-
-        answers.push(score);
-
-        seedValue = (seedValue * 9301 + 49297) % 233280;
-    }
-
-    return answers;
 }
 
 // ============================================================
@@ -694,15 +771,19 @@ function getDataStats() {
     let totalKeys = 0;
     let totalSize = 0;
 
-    let airlineNames;
-    if (typeof getAirlines === 'function') {
-        airlineNames = getAirlines().map(a => a.name);
-    } else {
+    let airlineNames = getAirlinesFromCredentials(0);
+    if (airlineNames === null) {
         airlineNames = [
-            'Sita Air', 'Tara Air', 'Summit Air', 'Buddha Air',
-            'Yeti Airlines', 'Shree Airlines', 'Danfe Air'
+            { name: 'Sita Air' },
+            { name: 'Tara Air' },
+            { name: 'Summit Air' },
+            { name: 'Buddha Air' },
+            { name: 'Yeti Airlines' },
+            { name: 'Shree Airlines' },
+            { name: 'Danfe Air' }
         ];
     }
+    const airlineNameList = airlineNames.map(a => a.name || a);
 
     const tenantMap = {
         'Sita Air': 'sita-air',
@@ -714,7 +795,7 @@ function getDataStats() {
         'Danfe Air': 'danfe-air'
     };
 
-    airlineNames.forEach(airline => {
+    airlineNameList.forEach(airline => {
         const tenantId = tenantMap[airline] || airline.toLowerCase().replace(/ /g, '-');
         let sessions = 0;
 
@@ -817,9 +898,13 @@ window.__admin = {
     resetDemoUser,
     toggleLanguage,
     renderAirlines,
-    populateAirlineSelector
+    populateAirlineSelector,
+    getAirlinesFromCredentials,
+    getSessionCount,
+    updateSessionCountDisplay
 };
 
 console.log('🔐 Admin Panel ready with centralized credential management');
 console.log('💡 Using credentials.js for admin authentication');
 console.log('💡 Click the language toggle to switch between English and Nepali');
+console.log('📊 Session count: 1-10 sessions per generation');

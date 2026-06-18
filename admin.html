@@ -2,7 +2,7 @@
 ================================================================================
 FILE: SurveySMS/admin.html
 VERSION: 1.0.0
-REVISION DATE: 2026-06-17
+REVISION DATE: 2026-06-18
 PURPOSE: Admin panel for managing survey data, generating dummy data, and system administration
 DEPENDENCIES: css/global.css, css/admin.css, js/utils.js, js/credentials.js, js/storage.js, js/auth.js, js/translations.js, js/admin.js
 USAGE: Admin users only (admin@surveysms.com)
@@ -34,6 +34,372 @@ CODE OWNER: aviasafetysystems.com
 
     <!-- Page-Specific Script -->
     <script src="js/admin.js"></script>
+
+    <style>
+        /* ============================================================
+           ADMIN UI IMPROVEMENTS
+           ============================================================ */
+
+        /* Airline Selector - Moved to bottom, improved styling */
+        .airline-selector-section {
+            background: white;
+            padding: 20px 25px;
+            border-radius: var(--radius);
+            margin-top: 25px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+        }
+
+        .airline-selector-section .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            color: var(--primary);
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+
+        .airline-selector-section .section-header i {
+            color: var(--secondary);
+            font-size: 1.2rem;
+        }
+
+        .airline-selector-section .section-header .badge-count {
+            background: var(--secondary);
+            color: var(--primary);
+            padding: 2px 10px;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .airline-selector-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .airline-selector-grid .airline-select {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 18px;
+            border: 2px solid var(--gray-200);
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+            transition: var(--transition);
+            font-family: inherit;
+            cursor: pointer;
+            appearance: auto;
+            -webkit-appearance: auto;
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .airline-selector-grid .airline-select:hover {
+            border-color: var(--primary);
+        }
+
+        .airline-selector-grid .airline-select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(10, 46, 74, 0.08);
+        }
+
+        .airline-selector-grid .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 48px;
+            flex: 0 0 auto;
+        }
+
+        .airline-selector-grid .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .airline-selector-grid .btn:active {
+            transform: scale(0.98);
+        }
+
+        .airline-selector-grid .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .airline-selector-grid .btn-success:hover {
+            background: #218838;
+        }
+
+        .airline-selector-grid .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .airline-selector-grid .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .airline-selector-grid .btn i {
+            font-size: 0.9rem;
+        }
+
+        /* Session Count Input */
+        .session-count-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 0 0 auto;
+        }
+
+        .session-count-row .session-label {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .session-count-row .session-label i {
+            color: var(--secondary);
+        }
+
+        .session-count-row .session-input {
+            width: 70px;
+            padding: 10px 12px;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 1rem;
+            text-align: center;
+            font-weight: 600;
+            transition: var(--transition);
+            background: white;
+            -moz-appearance: textfield;
+        }
+
+        .session-count-row .session-input::-webkit-outer-spin-button,
+        .session-count-row .session-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .session-count-row .session-input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(10, 46, 74, 0.08);
+        }
+
+        .session-count-row .session-input:hover {
+            border-color: var(--primary-light);
+        }
+
+        .selector-hint {
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: var(--gray-600);
+            padding: 8px 14px;
+            background: var(--gray-100);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .selector-hint i {
+            color: var(--secondary);
+        }
+
+        .selector-hint strong {
+            color: var(--primary);
+        }
+
+        /* Action Cards */
+        .admin-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .action-card {
+            background: white;
+            padding: 25px 22px;
+            border-radius: var(--radius);
+            border: 1px solid var(--gray-200);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .action-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .action-card .icon {
+            font-size: 2.2rem;
+            margin-bottom: 12px;
+        }
+
+        .action-card .icon.danger { color: var(--danger); }
+        .action-card .icon.success { color: var(--success); }
+        .action-card .icon.warning { color: var(--warning); }
+        .action-card .icon.primary { color: var(--primary); }
+
+        .action-card h3 {
+            color: var(--primary);
+            font-size: 1.05rem;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .action-card p {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            flex: 1;
+            line-height: 1.5;
+        }
+
+        .action-card .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .action-card .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .action-card .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .action-card .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .action-card .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .action-card .btn-success:hover {
+            background: #218838;
+        }
+
+        .action-card .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .action-card .btn-warning:hover {
+            background: #e96b0f;
+        }
+
+        .action-card .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .action-card .btn-primary:hover {
+            background: var(--primary-light);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .airline-selector-grid {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .airline-selector-grid .airline-select {
+                min-width: auto;
+                width: 100%;
+                padding: 14px 16px;
+                font-size: 1rem;
+            }
+
+            .airline-selector-grid .btn {
+                flex: 1;
+                width: 100%;
+                justify-content: center;
+                padding: 14px 20px;
+            }
+
+            .airline-selector-section {
+                padding: 16px 18px;
+            }
+
+            .admin-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .action-card .btn {
+                width: 100%;
+            }
+
+            .session-count-row {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .session-count-row .session-input {
+                width: 60px;
+                padding: 8px 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .airline-selector-section .section-header {
+                font-size: 0.95rem;
+                flex-wrap: wrap;
+            }
+
+            .airline-selector-grid .airline-select {
+                font-size: 0.95rem;
+                padding: 12px 14px;
+            }
+
+            .airline-selector-grid .btn {
+                font-size: 0.9rem;
+                padding: 12px 16px;
+            }
+
+            .session-count-row .session-label {
+                font-size: 0.8rem;
+            }
+
+            .session-count-row .session-input {
+                width: 50px;
+                padding: 6px 8px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -76,22 +442,6 @@ CODE OWNER: aviasafetysystems.com
                 <!-- Status Messages -->
                 <div class="status-msg" id="statusMsg"></div>
 
-                <!-- ===== AIRLINE SELECTOR FOR DUMMY DATA ===== -->
-                <div class="airline-selector-section">
-                    <h4><i class="fas fa-filter"></i> Select Airline for Data Management</h4>
-                    <div class="airline-selector-grid">
-                        <select id="airlineSelector" class="airline-select">
-                            <option value="all">✈️ All Airlines</option>
-                        </select>
-                        <button class="btn btn-success" onclick="generateDummyDataForAirline()">
-                            <i class="fas fa-play"></i> Generate for Selected
-                        </button>
-                        <button class="btn btn-danger" onclick="wipeDataForAirline()">
-                            <i class="fas fa-trash"></i> Wipe Selected
-                        </button>
-                    </div>
-                </div>
-
                 <!-- ===== ACTIONS ===== -->
                 <div class="admin-actions">
                     <!-- Wipe All Data -->
@@ -126,7 +476,7 @@ CODE OWNER: aviasafetysystems.com
 
                     <!-- Reset Demo User -->
                     <div class="action-card">
-                        <div class="icon"><i class="fas fa-user-refresh"></i></div>
+                        <div class="icon primary"><i class="fas fa-user-refresh"></i></div>
                         <h3 id="actionResetTitle">Reset Demo User</h3>
                         <p id="actionResetDesc">Reset the demo user account to start fresh with a new session.</p>
                         <button class="btn btn-primary" onclick="resetDemoUser()" id="actionResetBtn">
@@ -135,9 +485,43 @@ CODE OWNER: aviasafetysystems.com
                     </div>
                 </div>
 
+                <!-- ===== AIRLINE SELECTOR - WITH SESSION COUNT ===== -->
+                <div class="airline-selector-section">
+                    <div class="section-header">
+                        <i class="fas fa-filter"></i>
+                        <span>Airline-Specific Data Management</span>
+                        <span class="badge-count" id="airlineCountBadge">0</span>
+                    </div>
+                    <div class="airline-selector-grid">
+                        <div class="selector-row">
+                            <select id="airlineSelector" class="airline-select">
+                                <option value="all">✈️ All Airlines</option>
+                            </select>
+                        </div>
+                        <div class="selector-row session-count-row">
+                            <label for="sessionCount" class="session-label">
+                                <i class="fas fa-layer-group"></i> Sessions:
+                            </label>
+                            <input type="number" id="sessionCount" class="session-input" value="5" min="1" max="10" onchange="updateSessionCountDisplay()" oninput="updateSessionCountDisplay()" />
+                        </div>
+                        <div class="button-row">
+                            <button class="btn btn-success" onclick="generateDummyDataForAirline()">
+                                <i class="fas fa-play"></i> Generate
+                            </button>
+                            <button class="btn btn-danger" onclick="wipeDataForAirline()">
+                                <i class="fas fa-trash"></i> Wipe
+                            </button>
+                        </div>
+                    </div>
+                    <div class="selector-hint">
+                        <i class="fas fa-info-circle"></i>
+                        Generate <strong><span id="sessionCountDisplay">5</span></strong> session(s) for selected airline(s)
+                    </div>
+                </div>
+
                 <!-- ===== AIRLINES LIST ===== -->
                 <div class="airlines-section">
-                    <h4><i class="fas fa-users"></i> <span id="airlinesTitle">SAAS Provided To: <span id="tenantCount">(0)</span></span></h4>
+                    <h4><i class="fas fa-users"></i> <span id="airlinesTitle">SAAS Provided To: (0)</span></h4>
                     <div class="airlines-list" id="airlinesList">
                         <!-- Populated by JavaScript -->
                     </div>
@@ -162,6 +546,9 @@ CODE OWNER: aviasafetysystems.com
         console.log('💡 Click the language toggle to switch between English and Nepali');
         console.log('🔑 Password: survey2026');
         console.log('✈️ Airlines: Sita Air, Tara Air, Summit Air, Buddha Air, Yeti Airlines, Shree Airlines, Danfe Air');
+        console.log('📋 Airline selector moved to bottom section');
+        console.log('🔗 Admin link available in footer of index.html');
+        console.log('📊 Session count input allows 1-10 sessions per generation');
     </script>
 
 </body>

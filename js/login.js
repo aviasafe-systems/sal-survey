@@ -1,9 +1,10 @@
 /*
 ================================================================================
 FILE: SurveySMS/js/login.js
-VERSION: 7.1.0
-REVISION DATE: 2026-06-17
+VERSION: 1.0.2
+REVISION DATE: 2026-06-18
 PURPOSE: Login page logic - authentication using centralized credentials
+         NO AUTO-REDIRECT - users always see the login form
 DEPENDENCIES: credentials.js, translations.js
 USAGE: login.html
 AUTHOR: Ghanshyam Acharya
@@ -27,11 +28,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     currentLang = urlParams.get('lang') || localStorage.getItem('sms_lang') || 'en';
 
+    // ✅ NO AUTO-REDIRECT - Always show login page
+    // Users should come from index.html which has all the portal links
+
     // Update UI
     updateLanguageToggle();
     updateTranslations();
 
-    // Clear fields
+    // Clear fields for fresh login
     const emailField = document.getElementById('email');
     const passwordField = document.getElementById('password');
     
@@ -53,9 +57,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log('💡 Login page ready in:', currentLang);
     console.log('💡 Using centralized credential management (credentials.js)');
+    console.log('💡 No auto-redirect - users must click login');
     
-    // Log available users (for debugging)
-    if (window.CREDENTIALS) {
+    if (typeof window !== 'undefined' && window.CREDENTIALS) {
         console.log(`👥 ${Object.keys(window.CREDENTIALS).length} users available`);
     }
 });
@@ -108,7 +112,6 @@ function updateTranslations() {
     const footerNote = document.getElementById('footerNote');
     if (footerNote) footerNote.textContent = t('footer_note') || 'sms.aviasafesystems.com • Secure • ICAO Annex 19';
 
-    // Features
     const feature1 = document.getElementById('feature1');
     if (feature1) feature1.innerHTML = `<i class="fas fa-check-circle"></i> ${t('feature1') || '24 Questions'}`;
     
@@ -121,7 +124,6 @@ function updateTranslations() {
     const feature4 = document.getElementById('feature4');
     if (feature4) feature4.innerHTML = `<i class="fas fa-check-circle"></i> ${t('feature4') || 'Gap Analysis'}`;
 
-    // Error messages
     const errorMsg = document.getElementById('errorMessage');
     if (errorMsg) errorMsg.textContent = t('login_error') || 'Invalid credentials. Please try again.';
     
@@ -130,7 +132,7 @@ function updateTranslations() {
 }
 
 // ============================================================
-// LOGIN HANDLER (UPDATED)
+// LOGIN HANDLER
 // ============================================================
 function handleLogin(event) {
     event.preventDefault();
@@ -163,11 +165,6 @@ function handleLogin(event) {
         return;
     }
 
-    // ============================================================
-    // 🔐 AUTHENTICATION USING CREDENTIALS MODULE
-    // ============================================================
-    
-    // Check if credentials module is loaded
     if (typeof validateCredentials === 'undefined') {
         console.error('❌ Credentials module not loaded!');
         if (errorEl) {
@@ -177,7 +174,6 @@ function handleLogin(event) {
         return;
     }
 
-    // Validate credentials
     const user = validateCredentials(email, password);
 
     if (user) {
@@ -220,7 +216,6 @@ function handleLogin(event) {
     } else {
         console.log('❌ Login failed - Invalid credentials');
         if (errorEl) {
-            // Check if user exists
             const userExists = typeof getUserByEmail === 'function' && getUserByEmail(email);
             errorEl.textContent = userExists ? 
                 'Invalid password. Please try again.' : 
@@ -254,11 +249,10 @@ function redirectUser(userData) {
     if (role === 'admin') {
         window.location.href = `admin.html`;
     } else if (role === 'caan') {
-        window.location.href = `analytics/analytics.html?tenant=${tenantId}&role=caan&lang=${currentLang}`;
+        window.location.href = `analytics/caan-analytics.html?tenant=${tenantId}&role=caan&lang=${currentLang}`;
     } else if (role === 'safety_officer') {
-        window.location.href = `dashboard.html?tenant=${tenantId}&role=safety&lang=${currentLang}`;
+        window.location.href = `safety-dashboard.html?tenant=${tenantId}&role=safety&lang=${currentLang}`;
     } else {
-        // Participant
         window.location.href = `survey/survey.html?tenant=${tenantId}&session=1&lang=${currentLang}`;
     }
 }
@@ -271,9 +265,13 @@ function goBack() {
 }
 
 // ============================================================
-// KEYBOARD SHORTCUTS
+// KEYBOARD SHORTCUTS - FIXED
 // ============================================================
 document.addEventListener('keydown', function(e) {
+    // ✅ Check if user is typing in an input/textarea
+    const tagName = document.activeElement?.tagName?.toLowerCase() || '';
+    const isTyping = tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+    
     if (e.key === 'Enter') {
         const activeElement = document.activeElement;
         if (activeElement && (activeElement.id === 'email' || activeElement.id === 'password')) {
@@ -281,7 +279,9 @@ document.addEventListener('keydown', function(e) {
             document.getElementById('loginForm').dispatchEvent(new Event('submit'));
         }
     }
-    if (e.key === 'b' || e.key === 'B') {
+    
+    // ✅ Only trigger 'b' shortcut if NOT typing in a field
+    if ((e.key === 'b' || e.key === 'B') && !isTyping) {
         goBack();
     }
 });
@@ -299,7 +299,9 @@ window.__login = {
 
 console.log('🔐 Login page ready with centralized credential management');
 console.log('💡 Using credentials.js for authentication');
+console.log('💡 NO AUTO-REDIRECT - Users always see login page');
 console.log('💡 Demo Users (Participants): demo@*.com → Survey');
-console.log('💡 Safety Officers: safety@*.com → Dashboard → Analytics');
-console.log('💡 CAAN: demo@caan.gov.np → Analytics');
+console.log('💡 Safety Officers: safety@*.com → Safety Dashboard');
+console.log('💡 CAAN: smd@caanepal.gov.np → CAAN Analytics');
 console.log('💡 Admin: admin@surveysms.com → Admin Panel');
+console.log('💡 Press "b" to go back (only when not typing)');
